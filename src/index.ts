@@ -1,4 +1,8 @@
-export { property, method } from './primitives';
+export { func, val } from './primitives';
+
+// Plugin
+export type { BPlugin, BPluginClass } from './plugin';
+export { PluginRegistry } from './registries';
 
 // Service
 export { Service } from './service';

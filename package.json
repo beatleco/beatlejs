@@ -1,0 +1,37 @@
+{
+  "name": "beatlejs",
+  "version": "1.0.22",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Aryan Alikhani",
+  "description": "Yet another state management for react.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "rimraf -rf ./build && tsc -b",
+    "ship": "npm run build && rollup -c ./rollup.config.mjs && node ./ship.cjs",
+    "dev": "tsc -b -w --preserveWatchOutput",
+    "format": "prettier --write src/**/*.{ts,tsx}",
+    "lint": "eslint \"{src,test}/**/*.{ts,tsx}\" --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.0.0",
+    "glob": "^11.0.0",
+    "jest": "^29.7.0",
+    "rimraf": "^6.0.1",
+    "rollup": "^4.28.1",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  }
+}

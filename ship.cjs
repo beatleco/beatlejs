@@ -22,6 +22,8 @@ async function bootstrap() {
     path.resolve(__dirname, './README.md'),
     path.resolve(__dirname, './build/README.md'),
   );
+
+  await fs.unlink(path.resolve(__dirname, './build/tsconfig.tsbuildinfo'))
 }
 
 bootstrap();

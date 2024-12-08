@@ -2,7 +2,7 @@ export { func, val } from './primitives';
 
 // Plugin
 export type { BPlugin, BPluginClass } from './plugin';
-export { PluginRegistry } from './registries';
+export { PluginRegistry, MakeCustomRegistry } from './registries';
 
 // Service
 export { Service } from './service';

@@ -90,6 +90,7 @@ export function useContainer(): BContainer {
  * @example
  * ```tsx
  * import { Container } from "beatlejs";
+ * import { BeatleProvider } from "beatlejs/react";
  *
  * const container = Container();
  *

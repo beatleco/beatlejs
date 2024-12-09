@@ -41,11 +41,11 @@ export type BUseService<T> = {
  */
 export function useService<T extends unknown[]>(
   services: [...T],
-  id?: string,
+  scope?: string,
 ): BUseService<T> {
   const container = useContainer();
   return services.map((service) =>
-    container.getByClass(service, id),
+    container.getByClass(service, scope),
   ) as unknown as BUseService<T>;
 }
 

@@ -31,12 +31,12 @@ export const SignalRegistry = MakeCustomRegistry<string>();
  * It includes details about the service, the property, and the old/new values.
  */
 export type BNotifyEvent = {
-  target: BServiceClass; // The service class where the event originates
-  instance: BServiceInstance<unknown>; // The service instance where the event originates
-  key: string; // The key (ID) of the service instance
-  propertyName: string; // The name of the property being updated
-  value: unknown; // The new value of the property
-  similar: boolean; // Indicates if the new value is similar to the old value (no update)
+  target: BServiceClass;
+  instance: BServiceInstance<unknown>;
+  key: string;
+  propertyName: string;
+  value: unknown;
+  similar: boolean;
 };
 
 /**
@@ -68,16 +68,15 @@ export type BUseSignal<T> = {
  * It listens to property changes and triggers the provided callback when updates occur.
  *
  * @param services The list of services to subscribe to.
- * @param id Optional ID for a specific instance of a service.
+ * @param scope Optional scope for a specific instance of a service.
  */
 export function useSignal<T extends unknown[]>(
   services: [...T],
-  id?: string,
+  scope?: string,
 ): BUseSignal<T> {
   const container = useContainer(); // Get the service container
   const [, setLocalState] = useState<Record<string, unknown>>({}); // State to track updated values
 
-  const len = services.length;
   const firstService = services[0] as BServiceClass;
 
   // Callback function to handle the received signal message
@@ -85,7 +84,13 @@ export function useSignal<T extends unknown[]>(
     key,
     propertyName,
     value,
+    target,
   }: BNotifyEvent) {
+    if (scope) {
+      if (key === target.identifier && scope.indexOf(key) === -1) return;
+    } else {
+      if (key !== target.identifier) return;
+    }
     setLocalState((localState) => {
       const uniquePropertyPath = `${key}_${propertyName}`;
       if (localState[uniquePropertyPath] === value) return localState;
@@ -98,21 +103,21 @@ export function useSignal<T extends unknown[]>(
 
   useEffect(() => {
     const signalPlugin = container.getPluginByClass(SignalPlugin); // Get the signal plugin from container
-    if (len === 1) {
+    if (services.length === 1) {
       // Subscribe to the signal for a single service
       return signalPlugin.subscribe(
-        id ? `${firstService.identifier}_${id}` : firstService,
+        scope ? `${firstService.identifier}_${scope}` : firstService,
         onMessage,
       );
     } else {
       // Subscribe to signals for all services in the array
       return signalPlugin.subscribeAll(onMessage);
     }
-  }, [container, onMessage, firstService, len, id]);
+  }, [container, onMessage, firstService, services.length, scope]);
 
   // Return mapped service instances
   return services.map((service) =>
-    container.getByClass(service, id),
+    container.getByClass(service, scope),
   ) as unknown as BUseSignal<T>;
 }
 

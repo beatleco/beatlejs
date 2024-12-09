@@ -130,7 +130,7 @@ export function TimerPlugin(): BPlugin {
           // Define the timer function as a property on the instance.
           Object.defineProperty(instance, propertyName, {
             configurable: true,
-            enumerable: true,
+            enumerable: false,
             writable: false,
             value: starter, // The starter function will start the timer when called.
           });

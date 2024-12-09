@@ -95,7 +95,7 @@ function DebouncePlugin(): BPlugin {
         // Replace the original method with the debounced one
         Object.defineProperty(instance, propertyName, {
           configurable: true,
-          enumerable: true,
+          enumerable: false,
           writable: false,
           value: replacementFunction,
         });

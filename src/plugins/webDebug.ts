@@ -20,7 +20,7 @@ export function WebDebugPlugin(): BPlugin {
       // The property is non-writable and configurable, meaning it cannot be changed or deleted.
       Object.defineProperty(window, key, {
         configurable: true, // The property can be deleted or modified in terms of configuration.
-        enumerable: true, // The property will show up in `for...in` loops or `Object.keys()` calls.
+        enumerable: false, // The property will show up in `for...in` loops or `Object.keys()` calls.
         writable: false, // The value cannot be changed after being set.
         value: instance, // The service instance itself is assigned as the value of the property.
       });
@@ -40,7 +40,7 @@ export function WebDebugPlugin(): BPlugin {
       // Set the property on `window` to `undefined`, effectively removing the reference to the instance.
       Object.defineProperty(window, key, {
         configurable: true, // The property can still be deleted or modified.
-        enumerable: true, // The property will show up in enumeration.
+        enumerable: false, // The property will show up in enumeration.
         writable: false, // Prevent modification of the value.
         value: undefined, // Set the value to `undefined` to clear the reference.
       });

@@ -153,7 +153,7 @@ export function Container(): BContainer {
         typeof instance[name] === 'function'
       ) {
         const fn = instance[name];
-        return Promise.resolve(fn.apply(instance, args));
+        await Promise.resolve(fn.apply(instance, args));
       }
     }
   }
@@ -272,7 +272,7 @@ export function Container(): BContainer {
     // Add reset and destroy methods to the service instance
     Object.defineProperty(instance, 'reset', {
       configurable: false,
-      enumerable: true,
+      enumerable: false,
       writable: false,
       value: () => {
         Object.keys(instance).forEach((key) => {
@@ -283,7 +283,7 @@ export function Container(): BContainer {
 
     Object.defineProperty(instance, 'destroy', {
       configurable: false,
-      enumerable: true,
+      enumerable: false,
       writable: false,
       value: async () => {
         for (const plugin of plugins.values()) {

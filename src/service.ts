@@ -73,8 +73,8 @@ export type BServiceOptions = {
  * @example
  * ```tsx
  * import type { BDescriptor, BServiceClass } from "beatlejs";
- * import { MakeCustomRegistry } from 'beatlejs/registries';
- * export const DebounceRegistry = MakeCustomRegistry<{
+ * import { MakeArrayRegistry } from 'beatlejs/registries';
+ * export const DebounceRegistry = MakeArrayRegistry<{
  *   propertyName: string;
  *   ms: number
  * }>();

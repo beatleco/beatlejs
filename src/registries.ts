@@ -3,7 +3,14 @@ import type { BServiceClass } from './service';
 
 export const ServiceRegistry = new Set<BServiceClass>();
 export const ServiceIdentifiers = new Map<string, BServiceClass>();
-export const PluginRegistry = new Set<BPluginClass>();
+const PluginRegistry = new Set<BPluginClass>();
+export const PluginArray: BPluginClass[] = [];
+
+export function extendPlugins(plugin: BPluginClass) {
+  if (PluginRegistry.has(plugin)) return;
+  PluginRegistry.add(plugin);
+  PluginArray.push(plugin);
+}
 
 /**
  * Creates a custom registry tailored to your specific needs.
@@ -19,10 +26,10 @@ export const PluginRegistry = new Set<BPluginClass>();
  * @example
  * ```tsx
  * import type { BDescriptor, BServiceClass } from "beatlejs";
- * import { MakeCustomRegistry } from 'beatlejs/registries';
+ * import { MakeArrayRegistry } from 'beatlejs/registries';
  *
  * // Create a custom registry to store debounce information
- * export const DebounceRegistry = MakeCustomRegistry<{
+ * export const DebounceRegistry = MakeArrayRegistry<{
  *   propertyName: string;
  *   ms: number;
  * }>();
@@ -41,7 +48,7 @@ export const PluginRegistry = new Set<BPluginClass>();
  * ```
  *
  */
-export function MakeCustomRegistry<T>() {
+export function MakeArrayRegistry<T>() {
   const map = new Map<BServiceClass, T[]>();
   return {
     register(target: BServiceClass, prop: T) {
@@ -61,6 +68,31 @@ export function MakeCustomRegistry<T>() {
       return svc.length;
     },
     forEach(callback: (value: T[], key: BServiceClass) => void) {
+      map.forEach(callback);
+    },
+  };
+}
+
+export function MakeSetRegistry<T>() {
+  const map = new Map<BServiceClass, Set<T>>();
+  return {
+    register(target: BServiceClass, prop: T) {
+      let service = map.get(target);
+      if (!service) {
+        service = new Set();
+        map.set(target, service);
+      }
+      service.add(prop);
+    },
+    get(target: BServiceClass) {
+      return map.get(target);
+    },
+    count(target: BServiceClass) {
+      const svc = map.get(target);
+      if (!svc) return 0;
+      return svc.size;
+    },
+    forEach(callback: (value: Set<T>, key: BServiceClass) => void) {
       map.forEach(callback);
     },
   };

@@ -1,5 +1,5 @@
 import type { JSX, PropsWithChildren } from 'react';
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 
 import type { BContainer } from './container';
 import { BeatleContext } from './context';
@@ -36,7 +36,7 @@ export type BUseService<T> = {
  * ```
  *
  * @param {T[]} services - An array of service classes that need to be retrieved from the container.
- * @param {string} [id] - Optional service identifier to specify a particular instance in a scoped container.
+ * @param {string} [scope] - Optional service identifier to specify a particular instance of the service.
  * @returns {BUseService<T>} An array of service instances corresponding to the provided service classes.
  */
 export function useService<T extends unknown[]>(
@@ -44,9 +44,13 @@ export function useService<T extends unknown[]>(
   scope?: string,
 ): BUseService<T> {
   const container = useContainer();
-  return services.map((service) =>
-    container.getByClass(service, scope),
-  ) as unknown as BUseService<T>;
+  return useMemo(
+    () =>
+      services.map((service) =>
+        container.getByClass(service, scope),
+      ) as unknown as BUseService<T>,
+    [],
+  );
 }
 
 /**

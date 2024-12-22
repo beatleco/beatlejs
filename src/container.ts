@@ -1,5 +1,5 @@
 import type { BPlugin, BPluginClass } from './plugin';
-import { PluginRegistry, ServiceRegistry } from './registries';
+import { PluginArray, ServiceRegistry } from './registries';
 import type { BServiceClass, BServiceInstance } from './service';
 
 export const IdentifierSymbol = Symbol('identifier');
@@ -79,6 +79,27 @@ export type BContainer = {
    * @param {(target: BServiceClass, instance: unknown) => boolean} [filter] - An optional filter function to specify which services to clear.
    */
   clear(filter?: (target: BServiceClass, instance: unknown) => boolean): void;
+
+  /**
+   * Register a lazy loaded plugin into the container.
+   *
+   * @param plugin plugin class to be registered
+   */
+  registerPlugin<T extends BPluginClass>(plugin: T): void;
+
+  /**
+   * Store a variable inside the container.
+   *
+   * @param name name of the variable
+   */
+  setProperty<T = unknown>(name: string | symbol, value: T): void;
+
+  /**
+   * Get a variable from the container.
+   *
+   * @param name name of the variable
+   */
+  getProperty<T = unknown>(name: string | symbol): T | undefined;
 };
 
 /**
@@ -94,31 +115,62 @@ export type BContainer = {
  *
  * @returns {BContainer} - The container instance with methods to manage services, invoke functions, and handle plugins.
  */
-export function Container(): BContainer {
-  // Holds the registered services and their instances
+export function Container(options?: { maxPlugins?: number }): BContainer {
   const services = new Map<string, BServiceTuple>();
 
-  // Holds the registered plugins and their instances
-  const plugins = new Map<BPluginClass, BPlugin>();
+  const context: Record<string | symbol, unknown> = {};
+  const pluginSet = new Map<BPluginClass, number>();
+  const pluginArray: BPlugin[] = Array(options?.maxPlugins ?? 128);
+  let pluginCounter = 0;
 
-  // Container instance exposing various methods to interact with services and plugins
   const self: BContainer = {
     getByClass,
     getByName,
     getPluginByClass,
     resolveByClass,
+    registerPlugin,
     invokeParallel,
     invokeLinear,
     clear,
+    setProperty,
+    getProperty,
   };
 
+  function setProperty<T = unknown>(name: string | symbol, value: T) {
+    Object.defineProperty(context, name, {
+      configurable: true,
+      enumerable: true,
+      writable: false,
+      value,
+    });
+  }
+
+  function getProperty<T = unknown>(name: string | symbol) {
+    return context[name] as unknown as T | undefined;
+  }
+
+  function addPlugin(plugin: BPluginClass) {
+    const instance = plugin(self);
+    const index = pluginCounter++;
+    pluginArray[index] = instance;
+    pluginSet.set(plugin, index);
+    return instance;
+  }
+
   // Initialize all registered plugins and add them to the container
-  PluginRegistry.forEach((plugin) => {
-    plugins.set(plugin, plugin(self));
-  });
+  PluginArray.forEach((plugin) => addPlugin(plugin));
 
   // Initialize all registered services
   ServiceRegistry.forEach((item) => getByClass(item));
+
+  function registerPlugin(plugin: BPluginClass) {
+    if (pluginSet.has(plugin)) return;
+    const pluginInstance = addPlugin(plugin);
+    services.forEach((value) => {
+      if (pluginInstance.onCreate)
+        pluginInstance.onCreate(value.class, value.instance);
+    });
+  }
 
   // Method to invoke a function on all services in parallel
   async function invokeParallel(name: string, ...args: unknown[]) {
@@ -177,9 +229,9 @@ export function Container(): BContainer {
 
   // Method to retrieve a plugin by its class
   function getPluginByClass<T extends BPluginClass>(type: T): ReturnType<T> {
-    const plugin = plugins.get(type) as unknown as ReturnType<T>;
-    if (!plugin) throw new Error('Plugin not found.');
-    return plugin;
+    const index = pluginSet.get(type);
+    if (typeof index === 'undefined') throw new Error('Plugin not found.');
+    return pluginArray[index] as unknown as ReturnType<T>;
   }
 
   // Method to resolve a service by its class
@@ -190,7 +242,8 @@ export function Container(): BContainer {
     if (!impl) {
       const instance = makeService(target, key);
       // Invoke onCreate for each plugin when a new service is created
-      for (const plugin of plugins.values()) {
+      for (let i = 0; i < pluginCounter; i++) {
+        const plugin = pluginArray[i];
         if (plugin.onCreate) {
           await plugin.onCreate(target as BServiceClass, instance);
         }
@@ -212,7 +265,8 @@ export function Container(): BContainer {
     if (!impl) {
       const instance = makeService(target, key);
       // Invoke onCreate for each plugin when a new service is created
-      for (const plugin of plugins.values()) {
+      for (let i = 0; i < pluginCounter; i++) {
+        const plugin = pluginArray[i];
         if (plugin.onCreate) {
           plugin.onCreate(target as BServiceClass, instance);
         }
@@ -286,7 +340,8 @@ export function Container(): BContainer {
       enumerable: false,
       writable: false,
       value: async () => {
-        for (const plugin of plugins.values()) {
+        for (let i = pluginCounter - 1; i >= 0; i--) {
+          const plugin = pluginArray[i];
           if (plugin.onDestroy) {
             await plugin.onDestroy(target as BServiceClass, instance);
           }

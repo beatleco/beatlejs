@@ -15,11 +15,11 @@ import type { BServiceClass } from './service';
  * The plugin class can optionally accept a `container` parameter, allowing the plugin to interact with
  * or access services and containers directly.
  *
- * You can register the plugin by passing the class to a `PluginRegistry`.
+ * You can register the plugin by passing the class to a `extendPlugin`.
  *
  * @example
  * ```tsx
- * import { PluginRegistry } from "beatlejs";
+ * import { extendPlugins } from "beatlejs";
  * import { BServiceClass, BServiceInstance, BPlugin } from "beatlejs";
  *
  * // Example of creating a plugin class
@@ -35,7 +35,7 @@ import type { BServiceClass } from './service';
  * }
  *
  * // Register the plugin
- * PluginRegistry.add(ExamplePlugin);
+ * extendPlugins(ExamplePlugin);
  * ```
  */
 export type BPluginClass = { (container?: BContainer): BPlugin };

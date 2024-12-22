@@ -1,6 +1,6 @@
 import { IdentifierSymbol } from '../container';
 import type { BPlugin } from '../plugin';
-import { MakeCustomRegistry, PluginRegistry } from '../registries';
+import { MakeArrayRegistry, extendPlugins } from '../registries';
 import type { BDescriptor, BServiceClass, BServiceInstance } from '../service';
 /**
  * Type definition for a retry function.
@@ -26,7 +26,7 @@ export type BRetryOptions = {
  * A custom registry for retry configurations.
  * Stores retry options for methods that need to be retried on failure.
  */
-export const RetryRegistry = MakeCustomRegistry<
+export const RetryRegistry = MakeArrayRegistry<
   BRetryOptions & {
     propertyName: string; // The name of the method to be retried
   }
@@ -165,7 +165,4 @@ function RetryPlugin(): BPlugin {
   };
 }
 
-/**
- * Add the RetryPlugin to the PluginRegistry so it will be applied to services.
- */
-PluginRegistry.add(RetryPlugin);
+extendPlugins(RetryPlugin);

@@ -1,5 +1,5 @@
 import type { BPlugin } from '../plugin';
-import { MakeCustomRegistry, PluginRegistry } from '../registries';
+import { MakeArrayRegistry, extendPlugins } from '../registries';
 import type { BDescriptor, BServiceClass, BServiceInstance } from '../service';
 
 /**
@@ -19,7 +19,7 @@ export type BDebounceOptions = {
  * A custom registry for debouncing configurations.
  * Stores debounce options for methods that need to be debounced.
  */
-export const DebounceRegistry = MakeCustomRegistry<
+export const DebounceRegistry = MakeArrayRegistry<
   BDebounceOptions & {
     propertyName: string;
   }
@@ -118,7 +118,4 @@ function DebouncePlugin(): BPlugin {
   };
 }
 
-/**
- * Add the DebouncePlugin to the PluginRegistry so it will be applied to services.
- */
-PluginRegistry.add(DebouncePlugin);
+extendPlugins(DebouncePlugin);

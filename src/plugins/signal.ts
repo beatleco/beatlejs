@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IdentifierSymbol } from '../container';
 import { EventBus } from '../eventBus';
 import { useContainer } from '../react';
-import { MakeCustomRegistry, PluginRegistry } from '../registries';
+import { MakeArrayRegistry, MakeSetRegistry, extendPlugins } from '../registries';
 import type { BDescriptor, BServiceClass, BServiceInstance } from '../service';
 /**
  * Type definition for the Property Vault.
@@ -24,7 +24,7 @@ export const SignalChannelName = '\x00';
  * A custom registry for signal definitions.
  * Stores information about methods that will trigger signal events.
  */
-export const SignalRegistry = MakeCustomRegistry<string>();
+export const SignalRegistry = MakeSetRegistry<string>();
 
 /**
  * Type definition for the notification event when a property is updated.
@@ -80,26 +80,25 @@ export function useSignal<T extends unknown[]>(
   const firstService = services[0] as BServiceClass;
 
   // Callback function to handle the received signal message
-  const onMessage = useCallback(async function ({
-    key,
-    propertyName,
-    value,
-    target,
-  }: BNotifyEvent) {
-    if (scope) {
-      if (key === target.identifier && scope.indexOf(key) === -1) return;
-    } else {
-      if (key !== target.identifier) return;
-    }
-    setLocalState((localState) => {
+  const onMessage = useCallback(
+    function ({ key, propertyName, value, target, similar }: BNotifyEvent) {
+      if (scope) {
+        if (key === target.identifier && scope.indexOf(key) === -1) return;
+      } else {
+        if (key !== target.identifier) return;
+      }
+      if (similar) return;
       const uniquePropertyPath = `${key}_${propertyName}`;
-      if (localState[uniquePropertyPath] === value) return localState;
-      return {
-        ...localState,
-        [uniquePropertyPath]: value, // Update the state with new value
-      };
-    });
-  }, []);
+      setLocalState((localState) => {
+        if (localState[uniquePropertyPath] === value) return localState;
+        return {
+          ...localState,
+          [uniquePropertyPath]: value,
+        };
+      });
+    },
+    [scope],
+  );
 
   useEffect(() => {
     const signalPlugin = container.getPluginByClass(SignalPlugin); // Get the signal plugin from container
@@ -113,12 +112,16 @@ export function useSignal<T extends unknown[]>(
       // Subscribe to signals for all services in the array
       return signalPlugin.subscribeAll(onMessage);
     }
-  }, [container, onMessage, firstService, services.length, scope]);
+  }, [scope]);
 
   // Return mapped service instances
-  return services.map((service) =>
-    container.getByClass(service, scope),
-  ) as unknown as BUseSignal<T>;
+  return useMemo(
+    () =>
+      services.map((service) =>
+        container.getByClass(service, scope),
+      ) as unknown as BUseSignal<T>,
+    [scope],
+  );
 }
 
 /**
@@ -138,7 +141,7 @@ export function SignalPlugin() {
      */
     subscribe(
       target: BServiceClass | string,
-      listener: (message: BNotifyEvent) => Promise<void>,
+      listener: (message: BNotifyEvent) => Promise<void> | void,
     ) {
       return eventBus.subscribe(
         typeof target === 'string' ? target : target.identifier,
@@ -151,7 +154,7 @@ export function SignalPlugin() {
      *
      * @param listener The callback listener for the event.
      */
-    subscribeAll(listener: (message: BNotifyEvent) => Promise<void>) {
+    subscribeAll(listener: (message: BNotifyEvent) => Promise<void> | void) {
       return eventBus.subscribe(SignalChannelName, listener); // Broadcast to all services
     },
 
@@ -218,7 +221,4 @@ export function getVaultFromInstance(
   return vault;
 }
 
-/**
- * Registers the SignalPlugin into the plugin registry for system-wide use.
- */
-PluginRegistry.add(SignalPlugin);
+extendPlugins(SignalPlugin);

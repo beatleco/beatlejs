@@ -1,5 +1,5 @@
 import type { BPlugin } from '../plugin';
-import { MakeCustomRegistry, PluginRegistry } from '../registries';
+import { MakeArrayRegistry, extendPlugins } from '../registries';
 import type { BDescriptor, BServiceClass, BServiceInstance } from '../service';
 /**
  * A timer function that is executed at intervals and may run for a certain number of shots.
@@ -24,7 +24,7 @@ export type BTimerOptions = {
  * Custom registry that stores timer options for each service property.
  * The registry holds the configuration for each timed property in the service.
  */
-export const TimerRegistry = MakeCustomRegistry<
+export const TimerRegistry = MakeArrayRegistry<
   BTimerOptions & {
     propertyName: string; // The name of the property being timed.
   }
@@ -38,8 +38,8 @@ export const TimerRegistry = MakeCustomRegistry<
  * @param options Timer options such as interval, shots, and startManually.
  * @returns A function that starts the timer when invoked.
  */
-export function timer(
-  next: BDescriptor<BTimerFunction>,
+export function timer<T>(
+  next: BDescriptor<T>,
   options?: Partial<BTimerOptions>,
 ): BDescriptor<VoidFunction> {
   return function (target, key) {
@@ -120,36 +120,30 @@ export function TimerPlugin(): BPlugin {
            * Starter function that triggers the timer function if not already running.
            */
           function starter() {
-            if (running) return; // Don't start the timer if it's already running.
-            timerFunction(); // Start the timer function.
+            if (running) return;
+            timerFunction();
           }
 
-          // If the timer doesn't start manually, start it automatically.
           if (!startManually) timerFunction();
 
-          // Define the timer function as a property on the instance.
           Object.defineProperty(instance, propertyName, {
             configurable: true,
             enumerable: false,
             writable: false,
-            value: starter, // The starter function will start the timer when called.
+            value: starter,
           });
         },
       );
     },
 
-    // When a service is destroyed, clear all active timers.
     async onDestroy(_: BServiceClass, instance: BServiceInstance<never>) {
       const timers = timerMap.get(instance);
       if (timers) {
-        timers.forEach(clearTimeout); // Clear each timeout (timer).
-        timers.splice(0, timers.length); // Clear the array of timers.
+        timers.forEach(clearTimeout);
+        timers.splice(0, timers.length);
       }
     },
   };
 }
 
-/**
- * Registers the TimerPlugin into the plugin registry to manage timer-based behaviors.
- */
-PluginRegistry.add(TimerPlugin);
+extendPlugins(TimerPlugin);

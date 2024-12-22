@@ -1,6 +1,6 @@
 import { IdentifierSymbol } from '../container';
 import type { BPlugin } from '../plugin';
-import { PluginRegistry } from '../registries';
+import { extendPlugins } from '../registries';
 import type { BServiceClass, BServiceInstance } from '../service';
 
 export function WebDebugPlugin(): BPlugin {
@@ -49,4 +49,4 @@ export function WebDebugPlugin(): BPlugin {
 }
 
 // Register the plugin into the plugin registry.
-PluginRegistry.add(WebDebugPlugin);
+extendPlugins(WebDebugPlugin);

@@ -1,6 +1,6 @@
 import type { BContainer } from '../container';
 import { IdentifierSymbol } from '../container';
-import { MakeCustomRegistry, PluginRegistry } from '../registries';
+import { MakeArrayRegistry, extendPlugins } from '../registries';
 
 import type {
   BDescriptor,
@@ -8,6 +8,7 @@ import type {
   BServiceDefinition,
   BServiceInstance,
 } from '../service';
+
 /**
  * Type definition for a tagged property in a service.
  * Associates a tag with a service property.
@@ -36,7 +37,7 @@ export type BServiceSnapshot = {
 /**
  * Custom registry to keep track of tags associated with service properties.
  */
-export const TagsRegistry = MakeCustomRegistry<BTagDefinition>();
+export const TagsRegistry = MakeArrayRegistry<BTagDefinition>();
 
 /**
  * A decorator function to register a property with a specific tag.
@@ -199,7 +200,4 @@ export function TagsPlugin(container?: BContainer) {
   };
 }
 
-/**
- * Registers the TagsPlugin into the plugin registry to manage snapshots.
- */
-PluginRegistry.add(TagsPlugin);
+extendPlugins(TagsPlugin);

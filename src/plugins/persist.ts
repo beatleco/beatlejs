@@ -1,14 +1,14 @@
-import { BContainer } from '../container';
-import { BPlugin } from '../plugin';
+import type { BContainer } from '../container';
+import type { BPlugin } from '../plugin';
 import { extendPlugins, MakeSetRegistry, ServiceRegistry } from '../registries';
-import {
+import type {
   BDescriptor,
   BServiceClass,
   BServiceDefinition,
   BServiceInstance,
 } from '../service';
 import {
-  BNotifyEvent,
+  type BNotifyEvent,
   getVaultFromInstance,
   SignalChannelName,
   SignalPlugin,

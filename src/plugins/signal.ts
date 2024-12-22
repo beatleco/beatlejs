@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IdentifierSymbol } from '../container';
 import { EventBus } from '../eventBus';
 import { useContainer } from '../react';
-import { MakeArrayRegistry, MakeSetRegistry, extendPlugins } from '../registries';
+import { MakeSetRegistry, extendPlugins } from '../registries';
 import type { BDescriptor, BServiceClass, BServiceInstance } from '../service';
 /**
  * Type definition for the Property Vault.

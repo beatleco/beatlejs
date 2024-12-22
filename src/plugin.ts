@@ -1,4 +1,4 @@
-import { BContainer } from './container';
+import type { BContainer } from './container';
 import type { BServiceClass } from './service';
 
 /**

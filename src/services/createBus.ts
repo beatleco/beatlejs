@@ -1,4 +1,4 @@
-import { BListener, EventBus } from '../eventBus';
+import { type BListener, EventBus } from '../eventBus';
 import { func, val } from '../primitives';
 import { Service } from '../service';
 

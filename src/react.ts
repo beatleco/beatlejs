@@ -1,5 +1,5 @@
 import type { JSX, PropsWithChildren } from 'react';
-import React, { useContext, useMemo } from 'react';
+import { useContext, useMemo, createElement } from 'react';
 
 import type { BContainer } from './container';
 import { BeatleContext } from './context';
@@ -115,7 +115,7 @@ export function BeatleProvider({
   children,
 }: PropsWithChildren<{ container: BContainer }>): JSX.Element {
   return (
-    React.createElement(BeatleContext.Provider, {
+    createElement(BeatleContext.Provider, {
       value: { container },
       children,
     }) ?? null

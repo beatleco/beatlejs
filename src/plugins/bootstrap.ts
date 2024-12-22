@@ -1,8 +1,7 @@
-import { BContainer } from '../container';
-import { BPlugin } from '../plugin';
+import type { BContainer } from '../container';
+import type { BPlugin } from '../plugin';
 import { extendPlugins, ServiceRegistry } from '../registries';
-import { BServiceClass } from '../service';
-import { BServiceInstance } from '../service';
+import type { BServiceClass, BServiceInstance } from '../service';
 
 /**
  * Calls bootstrap function on all services

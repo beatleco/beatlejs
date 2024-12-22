@@ -1,6 +1,6 @@
 {
   "name": "beatlejs",
-  "version": "1.0.33",
+  "version": "1.0.36",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "Aryan Alikhani",
@@ -9,10 +9,9 @@
   "type": "module",
   "scripts": {
     "build": "rimraf -rf ./build && tsc -b",
-    "ship": "npm run build && rollup -c ./rollup.config.mjs && node ./ship.cjs",
+    "ship": "npm run build && rimraf -rf ./build/tsconfig.tsbuildinfo && rollup -c ./rollup.config.mjs && node ./ship.cjs",
     "dev": "tsc -b -w --preserveWatchOutput",
     "format": "prettier --write src/**/*.{ts,tsx}",
-    "lint": "eslint \"{src,test}/**/*.{ts,tsx}\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

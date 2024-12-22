@@ -9,3 +9,4 @@ node_modules
 run.sh
 *.log
 build
+*.tsbuildinfo

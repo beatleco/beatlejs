@@ -32,7 +32,7 @@ export const DebounceRegistry = MakeArrayRegistry<
  * @param next The original method descriptor.
  * @param ms The debounce delay in milliseconds (default is 250ms).
  */
-export function debounced<T>(
+export function debounce<T>(
   next: BDescriptor<T>,
   ms?: number,
 ): BDescriptor<T> {

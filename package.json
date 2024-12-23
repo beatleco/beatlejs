@@ -1,12 +1,20 @@
 {
   "name": "beatlejs",
-  "version": "1.0.37",
+  "version": "1.0.39",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "Aryan Alikhani",
   "description": "Yet another state management for react.",
   "license": "MIT",
   "type": "module",
+  "homepage": "https://github.com/beatleco/beatlejs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beatleco/beatlejs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/beatleco/beatlejs/issues"
+  },
   "scripts": {
     "build": "rimraf -rf ./build && tsc -b",
     "ship": "npm run build && rimraf -rf ./build/tsconfig.tsbuildinfo && rollup -c ./rollup.config.mjs && node ./ship.cjs",

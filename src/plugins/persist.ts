@@ -12,7 +12,7 @@ export const PersistRegistry = MakeSetRegistry<string>();
  * @param next - The original method descriptor.
  * @returns A descriptor function that registers the property as persistable.
  */
-export function persisted<T>(next: BDescriptor<T>): BDescriptor<T> {
+export function persist<T>(next: BDescriptor<T>): BDescriptor<T> {
   return function (target, propertyName) {
     PersistRegistry.register(target, propertyName);
     return next(target, propertyName) as T;

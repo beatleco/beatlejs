@@ -1,5 +1,6 @@
+import { func } from '../decorators/func';
+import { val } from '../decorators/val';
 import { type BListener, EventBus } from '../eventBus';
-import { func, val } from '../primitives';
 import { Service } from '../service';
 
 /**
@@ -10,7 +11,7 @@ import { Service } from '../service';
  * @param waitForDebounceInterval - The debounce interval (in ms) for the `waitFor` functionality (default is 100 ms).
  * @returns An event bus instance with dispatch, subscribe, and waitFor methods.
  */
-export function createBus<EventBody extends { type: unknown }>(
+export function bus<EventBody extends { type: unknown }>(
   identifier = 'Bus',
   waitForDebounceInterval = 100,
 ) {

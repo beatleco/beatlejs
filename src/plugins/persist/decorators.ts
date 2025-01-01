@@ -1,7 +1,7 @@
-import { MakeSetRegistry } from '../registries';
+import { MakeSetRegistry } from '../../registries';
 import type {
   BDescriptor
-} from '../service';
+} from '../../service';
 
 export const PersistRegistry = MakeSetRegistry<string>();
 

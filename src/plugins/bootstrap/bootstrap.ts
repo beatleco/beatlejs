@@ -1,15 +1,15 @@
-import type { BContainer } from '../container';
-import type { BPlugin } from '../plugin';
-import { extendPlugins, ServiceRegistry } from '../registries';
-import type { BServiceClass, BServiceInstance } from '../service';
+import type { BContainer } from '../../container';
+import type { BPlugin } from '../../plugin';
+import { extendPlugins, ServiceRegistry } from '../../registries';
+import type { BServiceClass, BServiceInstance } from '../../service';
 
 /**
  * Calls bootstrap function on all services
  */
-
 export function bootstrap(container: BContainer) {
   return container.invokeLinear('bootstrap');
 }
+
 function BootstrapPlugin(): BPlugin {
   const clone = new Map<BServiceClass, VoidFunction | undefined | null>();
   ServiceRegistry.forEach((key) => clone.set(key, null));

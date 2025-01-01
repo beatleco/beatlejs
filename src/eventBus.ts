@@ -17,6 +17,7 @@
  * @template M - The type of the message handled by the listener.
  */
 export type BListener<M> = (message: M) => Promise<void> | void;
+export type BUnsubscribe = () => void;
 
 /**
  * Creates a new EventBus to handle asynchronous callbacks.
@@ -64,24 +65,22 @@ export function EventBus<T, M>() {
      * @param message - The message to pass to each listener.
      * @returns A Promise that resolves when all listeners have been called.
      */
-    dispatch(type: T, message: M) {
+    async dispatch(type: T, message: M) {
       const listeners = getListeners(type);
       if (listeners.length) {
-        return Promise.all(
+        await Promise.all(
           listeners.map((listener) => Promise.resolve(listener(message))),
         );
       }
     },
 
     /**
-     * Subscribes to an event type by providing a listener function.
-     * The listener will be invoked whenever the event is dispatched.
+     * Subscribes to one or more event types and executes the provided listener when those events occur.
      *
-     * @param type - The event type to subscribe to.
-     * @param listener - The listener function to be called when the event is dispatched.
-     * @returns A function that can be called to unsubscribe from the event.
+     * @param args - The event types followed by the listener function. Supports multiple event types.
+     * @returns A function to unsubscribe from all the events.
      */
-    subscribe(type: T, listener: BListener<M>): () => void {
+    subscribe(type: T, listener: BListener<M>): BUnsubscribe {
       const listeners = getListeners(type);
       listeners.push(listener);
       return () =>
@@ -90,6 +89,29 @@ export function EventBus<T, M>() {
           if (idx === -1) return;
           listeners.splice(idx, 1);
         });
+    },
+  };
+}
+
+export function UnaryBus<M>() {
+  const listeners: BListener<M>[] = [];
+
+  return {
+    async dispatch(message: M) {
+      if (!listeners.length) return;
+      await Promise.all(
+        listeners.map((listener) => Promise.resolve(listener(message))),
+      );
+    },
+    subscribe(listener: BListener<M>): BUnsubscribe {
+      listeners.push(listener);
+      return () => {
+        Promise.resolve(() => {
+          const idx = listeners.indexOf(listener);
+          if (idx === -1) return;
+          listeners.splice(idx, 1);
+        });
+      };
     },
   };
 }

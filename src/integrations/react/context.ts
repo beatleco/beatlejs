@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { BContainer } from './container';
+import type { BContainer } from '../../container';
 
 /**
  * Interface for the Beatle context.

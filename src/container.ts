@@ -1,8 +1,10 @@
+import { UnaryBus, type BListener, type BUnsubscribe } from './eventBus';
 import type { BPlugin, BPluginClass } from './plugin';
-import { PluginArray, ServiceRegistry } from './registries';
+import { PluginArray, ServiceIdentifiers, ServiceRegistry } from './registries';
 import type { BServiceClass, BServiceInstance } from './service';
 
 export const IdentifierSymbol = Symbol('identifier');
+export const BusSymbol = Symbol('bus');
 
 /**
  * A tuple that holds a service class and its corresponding instance.
@@ -78,7 +80,14 @@ export type BContainer = {
    *
    * @param {(target: BServiceClass, instance: unknown) => boolean} [filter] - An optional filter function to specify which services to clear.
    */
-  clear(filter?: (target: BServiceClass, instance: unknown) => boolean): void;
+  reset(filter?: (target: BServiceClass, instance: unknown) => boolean): void;
+  /**
+   * Destroy services in the container.
+   * Optionally, a filter function can be provided to target specific services for removal.
+   *
+   * @param {(target: BServiceClass, instance: unknown) => boolean} [filter] - An optional filter function to specify which services to clear.
+   */
+  destroy(filter?: (target: BServiceClass, instance: unknown) => boolean): void;
 
   /**
    * Register a lazy loaded plugin into the container.
@@ -100,6 +109,9 @@ export type BContainer = {
    * @param name name of the variable
    */
   getProperty<T = unknown>(name: string | symbol): T | undefined;
+
+  dispatch<T>(message: T): Promise<void>;
+  subscribe<T>(listener: BListener<T>): BUnsubscribe;
 };
 
 /**
@@ -117,11 +129,11 @@ export type BContainer = {
  */
 export function Container(options?: { maxPlugins?: number }): BContainer {
   const services = new Map<string, BServiceTuple>();
-
   const context: Record<string | symbol, unknown> = {};
   const pluginSet = new Map<BPluginClass, number>();
   const pluginArray: BPlugin[] = Array(options?.maxPlugins ?? 128);
   let pluginCounter = 0;
+  const bus = UnaryBus<unknown>();
 
   const self: BContainer = {
     getByClass,
@@ -131,9 +143,12 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
     registerPlugin,
     invokeParallel,
     invokeLinear,
-    clear,
+    reset,
+    destroy,
     setProperty,
     getProperty,
+    dispatch: bus.dispatch as BContainer['dispatch'],
+    subscribe: bus.subscribe as BContainer['subscribe'],
   };
 
   function setProperty<T = unknown>(name: string | symbol, value: T) {
@@ -211,7 +226,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
   }
 
   // Method to clear services from the container
-  function clear(
+  function reset(
     filter?: (target: BServiceClass, instance: unknown) => boolean,
   ) {
     services.forEach((obj) => {
@@ -223,6 +238,23 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
         typeof obj.instance.reset === 'function'
       ) {
         obj.instance.reset();
+      }
+    });
+  }
+
+  // Method to clear services from the container
+  function destroy(
+    filter?: (target: BServiceClass, instance: unknown) => boolean,
+  ) {
+    services.forEach((obj) => {
+      if (filter && !filter(obj.class, obj.instance)) return;
+      // If the instance has a reset method, call it
+      if (
+        typeof obj.instance === 'object' &&
+        'reset' in obj.instance &&
+        typeof obj.instance.reset === 'function'
+      ) {
+        obj.instance.destroy();
       }
     });
   }
@@ -281,13 +313,16 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
   }
 
   // Method to retrieve a service by its name
-  function getByName<T = unknown>(
-    identifier: string,
-    scope?: string,
-  ): T | undefined {
+  function getByName<T = unknown>(identifier: string, scope?: string): T {
     const key = scope ? `${identifier}_${scope}` : identifier;
     const impl = services.get(key);
-    return impl?.instance as T;
+    if (impl) return impl.instance as T;
+    const target = ServiceIdentifiers.get(identifier);
+    if (!target)
+      throw new Error(
+        `${identifier}: Service is not registered within the global scope`,
+      );
+    return getByClass(target, scope) as T;
   }
 
   // Helper function to create a service instance
@@ -297,8 +332,13 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
   ): BServiceInstance<T> {
     const metadata = target as BServiceClass;
     const keys = new Set(Object.keys(metadata.blueprint));
-    const reservedKeywords = ['container ', 'reset', 'destroy'];
-
+    const reservedKeywords = [
+      'container',
+      'reset',
+      'destroy',
+      'dispatch',
+      'subscribe',
+    ];
     // Check for reserved keywords in service blueprint
     for (const keyword of reservedKeywords) {
       if (!keys.has(keyword)) continue;
@@ -308,6 +348,14 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
     }
 
     const instance = Object.create(metadata.blueprint);
+    const bus = UnaryBus();
+
+    Object.defineProperty(instance, BusSymbol, {
+      configurable: false,
+      enumerable: false,
+      writable: false,
+      value: bus,
+    });
 
     // Add identifiers and methods to the instance
     Object.defineProperty(instance, IdentifierSymbol, {
@@ -323,7 +371,17 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
       get: () => self,
     });
 
-    // Add reset and destroy methods to the service instance
+    Object.defineProperty(instance, 'dispatch', {
+      configurable: false,
+      enumerable: false,
+      value: bus.dispatch,
+    });
+    Object.defineProperty(instance, 'subscribe', {
+      configurable: false,
+      enumerable: false,
+      value: bus.subscribe,
+    });
+
     Object.defineProperty(instance, 'reset', {
       configurable: false,
       enumerable: false,

@@ -1,4 +1,5 @@
 import type { BContainer, IdentifierSymbol } from './container';
+import type { BListener, BUnsubscribe } from './eventBus';
 import { ServiceIdentifiers, ServiceRegistry } from './registries';
 
 /**
@@ -107,6 +108,7 @@ export interface BDescriptor<T> {
  * Registers and defines a service in the registry.
  */
 export type BServiceClass = {
+  index: number;
   identifier: string;
   blueprint: {
     [key: string | symbol]: unknown;
@@ -121,6 +123,8 @@ export type BServiceDefinition = {
   container: BContainer;
   reset(): void;
   destroy(): Promise<void>;
+  dispatch<T>(message: T): Promise<void>;
+  subscribe<T>(listener: BListener<T>): BUnsubscribe;
 };
 
 /**
@@ -194,6 +198,7 @@ export function Service<T extends Record<string, BDescriptor<unknown>>>(
     order: order,
     version: version,
     blueprint: {},
+    index: counter++,
   };
   Object.entries(definition).forEach(([key, field]) => {
     const value = field(service, key);
@@ -208,3 +213,5 @@ export function Service<T extends Record<string, BDescriptor<unknown>>>(
   ServiceRegistry.add(service);
   return service as unknown as BServiceInstance<T>;
 }
+
+let counter = 0;

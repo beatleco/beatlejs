@@ -1,8 +1,13 @@
-export { func, val } from './primitives';
+export { val } from './decorators/val';
+export { func } from './decorators/func';
 
 // Plugin
 export type { BPlugin, BPluginClass } from './plugin';
-export { extendPlugins, MakeArrayRegistry, MakeSetRegistry } from './registries';
+export {
+  extendPlugins,
+  MakeArrayRegistry,
+  MakeSetRegistry,
+} from './registries';
 
 // Service
 export { Service } from './service';

@@ -22,11 +22,11 @@ export function bus<EventBody extends { type: unknown }>(
   const self = Service(
     { identifier, order: -1000 },
     {
-      _bus: val(EventBus<EventBody['type'], EventBody>()), // Internal event bus instance.
-      _dispatchSet: val(new Set<EventBody['type']>()), // Set to track dispatched event types.
-      dispatch: func(dispatch), // Function to dispatch events.
-      subscribe: func(subscribe), // Function to subscribe to one or more events.
-      waitFor: func(waitFor), // Function to wait for a specific set of events.
+      bus: val(EventBus<EventBody['type'], EventBody>()),
+      dispatchSet: val(new Set<EventBody['type']>()),
+      emit: func(emit),
+      on: func(on),
+      waitFor: func(waitFor),
     },
   );
 
@@ -36,9 +36,9 @@ export function bus<EventBody extends { type: unknown }>(
    * @param this - The current service instance.
    * @param message - The event body containing the type and event data.
    */
-  async function dispatch(this: typeof self, message: EventBody) {
-    await this._bus.dispatch(message.type, message);
-    this._dispatchSet.add(message.type);
+  async function emit(this: typeof self, message: EventBody) {
+    await this.bus.dispatch(message.type, message);
+    this.dispatchSet.add(message.type);
   }
 
   /**
@@ -48,19 +48,19 @@ export function bus<EventBody extends { type: unknown }>(
    * @param args - The event types followed by the listener function. Supports multiple event types.
    * @returns A function to unsubscribe from all the events.
    */
-  function subscribe<T extends EventBody>(
+  function on<T extends EventBody>(
     this: typeof self,
     ...args: [T['type'], ...T['type'][], BListener<unknown>]
   ) {
     if (args.length < 3) {
       // Subscribe to a single event type.
-      return this._bus.subscribe(args[0] as T['type'], args[1] as any);
+      return this.bus.subscribe(args[0] as T['type'], args[1] as any);
     }
     const un: VoidFunction[] = [];
     const listener = args[args.length - 1];
     for (let i = 0; i < args.length - 1; i++) {
       const type = args[i];
-      un.push(this._bus.subscribe(type as T['type'], listener as any));
+      un.push(this.bus.subscribe(type as T['type'], listener as any));
     }
     // Return a function that unsubscribes from all event types.
     return () => un.forEach((a) => a());
@@ -80,7 +80,7 @@ export function bus<EventBody extends { type: unknown }>(
   ) {
     return new Promise((acc) => {
       const check = () => {
-        if (types.every((type) => this._dispatchSet.has(type))) {
+        if (types.every((type) => this.dispatchSet.has(type))) {
           acc(true);
           return;
         }

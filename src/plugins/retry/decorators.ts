@@ -1,5 +1,6 @@
 import { MakeArrayRegistry } from '../../registries';
 import { BDescriptor } from '../../service';
+import { DePromise } from '../../types';
 
 /**
  * Options for configuring the retry behavior.
@@ -36,10 +37,10 @@ export const RetryRegistry = MakeArrayRegistry<
  * @param next The original method descriptor.
  * @param options The retry options (optional).
  */
-export function retry<T>(
+export function retry<T extends (...args: any[]) => any>(
   next: BDescriptor<T>,
   options?: Partial<BRetryOptions>,
-): BDescriptor<T> {
+): BDescriptor<(...args: Parameters<T>) => Promise<DePromise<ReturnType<T>>>> {
   return function (target, key) {
     RetryRegistry.register(target, {
       propertyName: key,

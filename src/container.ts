@@ -110,8 +110,29 @@ export type BContainer = {
    */
   getProperty<T = unknown>(name: string | symbol): T | undefined;
 
+  /**
+   * Dispatch a message to service event bus
+   * 
+   * @param message message to dispatch
+   */
   dispatch<T>(message: T): Promise<void>;
+  /**
+   * Subscribe to service event bus
+   * 
+   * @param listener listener function 
+   */
   subscribe<T>(listener: BListener<T>): BUnsubscribe;
+
+  /**
+   * Halt hooks and events that are happening (mostly used by plugins)
+   * 
+   * @param inert inert mode 
+   */
+  halt(inert: boolean): void;
+  /**
+   * Check for halt in the system (mostly used by plugins)
+   */
+  isHalted(): boolean;
 };
 
 /**
@@ -134,6 +155,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
   const pluginArray: BPlugin[] = Array(options?.maxPlugins ?? 128);
   let pluginCounter = 0;
   const bus = UnaryBus<unknown>();
+  let bIsInert = false;
 
   const self: BContainer = {
     getByClass,
@@ -147,9 +169,20 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
     destroy,
     setProperty,
     getProperty,
+    halt,
+    isHalted,
     dispatch: bus.dispatch as BContainer['dispatch'],
     subscribe: bus.subscribe as BContainer['subscribe'],
   };
+
+  function isHalted() {
+    return bIsInert;
+  }
+
+  function halt(inert: boolean) {
+    bIsInert = inert;
+  }
+
 
   function setProperty<T = unknown>(name: string | symbol, value: T) {
     Object.defineProperty(context, name, {
@@ -185,6 +218,14 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
       if (pluginInstance.onCreate)
         pluginInstance.onCreate(value.class, value.instance);
     });
+  }
+
+  function autoRegisterNewPlugins() {
+    if(PluginArray.length != pluginCounter) {
+      for(let i = pluginCounter - 1; i < PluginArray.length; i++) {
+        addPlugin(PluginArray[i]);
+      }
+    }
   }
 
   // Method to invoke a function on all services in parallel
@@ -330,6 +371,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
     target: T,
     serviceIdentifier: string,
   ): BServiceInstance<T> {
+    autoRegisterNewPlugins();
     const metadata = target as BServiceClass;
     const keys = new Set(Object.keys(metadata.blueprint));
     const reservedKeywords = [

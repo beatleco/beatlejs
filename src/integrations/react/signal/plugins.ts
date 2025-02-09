@@ -1,4 +1,4 @@
-import { SignalRegistry } from './decorators';
+import { SignalRegistry } from '../../../decorators/signal';
 import { extendPlugins } from '../../../registries';
 import type { BServiceClass, BServiceInstance } from '../../../service';
 import { getVaultFromInstance } from '../../../vault';

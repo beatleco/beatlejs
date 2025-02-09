@@ -1,4 +1,5 @@
 import { IdentifierSymbol } from '../../../container';
+import { TypeError } from '../../../errors/TypeError';
 import type { BPlugin } from '../../../plugin';
 import { extendPlugins } from '../../../registries';
 import type { BServiceClass, BServiceInstance } from '../../../service';
@@ -25,6 +26,9 @@ function RetryPlugin(): BPlugin {
       definitions.forEach(
         ({ propertyName, interval, shots, maximumDelay, retryCurve }) => {
           const proxyFunction: BRetryFunction = instance[propertyName];
+          if (typeof proxyFunction !== 'function') {
+            throw new TypeError(instance[IdentifierSymbol], propertyName, 'retry plugin only works on functions');
+          }
           const index = timers.length;
 
           let counter = 1;

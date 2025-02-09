@@ -1,6 +1,7 @@
-import { useContext, useMemo } from 'react';
+import { useContext, useEffect, useMemo } from 'react';
 import type { BContainer } from '../../container';
 import { BeatleContext } from './context';
+import { callEffects } from './callEffects';
 
 export type BUseService<T> = {
   [K in keyof T]: T[K];
@@ -42,13 +43,15 @@ export function useService<T extends unknown[]>(
   scope?: string,
 ): BUseService<T> {
   const container = useContainer();
-  return useMemo(
+  const serviceInstances = useMemo(
     () =>
       services.map((service) =>
         container.getByClass(service, scope),
       ) as unknown as BUseService<T>,
     [],
   );
+  useEffect(() => callEffects(container, services, serviceInstances), []);
+  return serviceInstances;
 }
 
 /**

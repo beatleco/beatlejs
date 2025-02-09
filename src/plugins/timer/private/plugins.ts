@@ -1,3 +1,5 @@
+import { IdentifierSymbol } from '../../../container';
+import { TypeError } from '../../../errors/TypeError';
 import type { BPlugin } from '../../../plugin';
 import { extendPlugins } from '../../../registries';
 import type { BServiceClass, BServiceInstance } from '../../../service';
@@ -26,6 +28,9 @@ function TimerPlugin(): BPlugin {
       definitions.forEach(
         ({ propertyName, interval, shots, startManually }) => {
           const proxyFunction: BTimerFunction = instance[propertyName];
+          if (typeof proxyFunction !== 'function') {
+            throw new TypeError(instance[IdentifierSymbol], propertyName, 'timer plugin only works on functions');
+          }
           const index = timers.length;
           let running = false;
 

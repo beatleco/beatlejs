@@ -1,3 +1,5 @@
+import { IdentifierSymbol } from '../../../container';
+import { TypeError } from '../../../errors/TypeError';
 import type { BPlugin } from '../../../plugin';
 import { extendPlugins } from '../../../registries';
 import type { BServiceClass, BServiceInstance } from '../../../service';
@@ -22,6 +24,9 @@ function DebouncePlugin(): BPlugin {
       }
       definitions.forEach(({ propertyName, ms }) => {
         const proxyFunction: BDebounceFunction = instance[propertyName];
+        if (typeof proxyFunction !== 'function') {
+          throw new TypeError(instance[IdentifierSymbol], propertyName, 'debounce plugin only works on functions');
+        }
         const index = timers.length;
         function replacementFunction(...args: unknown[]) {
           if (!timers) return;

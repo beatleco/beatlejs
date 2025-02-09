@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BNotifyEvent, NotifyEventId } from '../../../events';
 import { BServiceInstance } from '../../../service';
 import { useContainer } from '../hooks';
+import { callEffects } from '../callEffects';
 /**
  * Type that maps a list of service classes to instances, using an optional ID.
  */
@@ -20,10 +21,15 @@ export function useSignal<T extends unknown[]>(
   services: [...T],
   scope?: string,
 ): BUseSignal<T> {
-  const container = useContainer(); // Get the service container
+  const container = useContainer();
+  const serviceInstances = useMemo(
+    () =>
+      services.map((service) =>
+        container.getByClass(service, scope),
+      ) as unknown as BUseSignal<T>,
+    [],
+  );
   const [, setLocalState] = useState<number>(0); // State to track updated values
-
-  // Callback function to handle the received signal message
   const onMessage = useCallback(
     (event: BNotifyEvent) => {
       if (!event) return;
@@ -33,21 +39,13 @@ export function useSignal<T extends unknown[]>(
     },
     [scope],
   );
-
   useEffect(() => {
-    const subs = services.map((target) => {
-      const svc = container.getByClass(target) as BServiceInstance<unknown>;
+    const subs = serviceInstances.map((service) => {
+      const svc = service as BServiceInstance<unknown>;
       return svc.subscribe(onMessage);
     });
+    subs.push(callEffects(container, services, serviceInstances))
     return () => subs.forEach((un) => un());
   }, []);
-
-  // Return mapped service instances
-  return useMemo(
-    () =>
-      services.map((service) =>
-        container.getByClass(service, scope),
-      ) as unknown as BUseSignal<T>,
-    [scope],
-  );
+  return serviceInstances;
 }

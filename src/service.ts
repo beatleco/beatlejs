@@ -187,7 +187,7 @@ export function Service<T extends Record<string, BDescriptor<unknown>>>(
   const existing = ServiceIdentifiers.get(identifier);
   if (existing) {
     console.error(
-      `${identifier}: Duplicate identifier found, service identifiers must be unique.`,
+      `${identifier}: Duplicate identifier found, Service identifiers must be unique or you are seeing this cause the service blueprint has changed during runtime (hard reload required!)`,
     );
     return existing as unknown as BServiceInstance<T>;
   }

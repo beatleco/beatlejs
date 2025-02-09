@@ -1,5 +1,5 @@
-import { MakeSetRegistry } from "../../../registries";
-import { BDescriptor } from "../../../service";
+import { MakeSetRegistry } from "../registries";
+import { BDescriptor } from "../service";
 
 /**
  * A custom registry for signal definitions.

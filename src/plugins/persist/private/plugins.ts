@@ -25,7 +25,7 @@ function PersistPlugin(container: BContainer | undefined): BPlugin {
           Symbol_dataProvider,
         );
       if (dataProvider) {
-        const data = dataProvider(getKey(service));
+        const data = dataProvider(getKey(service, instance));
         if (data) {
           const vault = getVaultFromInstance(instance);
           const obj: Record<string, unknown> = instance;
@@ -48,7 +48,7 @@ function PersistPlugin(container: BContainer | undefined): BPlugin {
           PersistRegistry.get(service),
         );
         if (snapshot) {
-          onSaveTriggered(getKey(service), snapshot);
+          onSaveTriggered(getKey(service, instance), snapshot);
         }
         clone.delete(service);
       }

@@ -14,9 +14,9 @@ export function callEffects(container: BContainer, services: unknown[], instance
       if (key in inst) {
         const fn = inst[key];
         if (typeof fn === 'function') {
-          const un = fn();
+          const un = fn.call(inst);
           if (un && typeof un === 'function')
-            subs.push(un);
+            subs.push(un.bind(inst));
         }
       }
     })

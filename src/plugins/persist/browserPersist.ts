@@ -1,6 +1,6 @@
 import './private/plugins';
-import { BContainer } from '../../container';
-import { BServiceClass } from '../../service';
+import { BContainer, IdentifierSymbol } from '../../container';
+import { BServiceClass, BServiceInstance } from '../../service';
 import { PersistRegistry } from './decorators';
 import {
   getKey,
@@ -14,6 +14,17 @@ import {
 } from './private/utils';
 import { BNotifyEvent, NotifyEventId } from '../../events';
 
+function getProps(target: BServiceClass) {
+  let set = PersistRegistry.get(target);
+  if (target.extends) {
+    const newSet = getProps(target.extends as BServiceClass);
+    if (newSet) {
+      if (!set) set = new Set();
+      newSet.forEach(prop => set?.add(prop));
+    }
+  }
+  return set;
+}
 export type BPersistDataProviderFunction = (
   requestedKey: string,
 ) => Record<string, unknown> | undefined;
@@ -44,46 +55,47 @@ export async function browserPersist({
   container.setProperty(Symbol_dataProvider, dataProvider);
   container.setProperty(Symbol_onSaveTriggered, onSaveTriggered);
 
-  PersistRegistry.forEach((_, target) => {
+  for (const item of container.getServices()) {
     try {
-      restoreServiceSnapshot(container, target, dataProvider(getKey(target)));
+      restoreServiceSnapshot(container, item.class, dataProvider(getKey(item.class, item.instance)));
     } catch (e) {
-      console.error(`error loading service data ${target.identifier}`, e);
+      console.error(`error loading service data ${item.instance[IdentifierSymbol]}`, e);
     }
-  });
+  }
 
   const persist: any = {};
   const debouncedPersist: any = {};
 
-  function getPersistor(target: BServiceClass) {
-    persist[target.identifier] =
-      persist[target.identifier] ||
-      ((target: BServiceClass) => {
-        const instance = container.getByClass(target);
+  function getPersistor(target: BServiceClass, instance: BServiceInstance<unknown>) {
+    const identifier = instance[IdentifierSymbol];
+    persist[identifier] =
+      persist[identifier] ||
+      (() => {
         const data = getServiceSnapshot(
           instance as never,
-          PersistRegistry.get(target),
+          getProps(target),
         );
-        return onSaveTriggered(getKey(target), data);
+        return onSaveTriggered(getKey(target, instance), data);
       });
-    return persist[target.identifier];
+    return persist[identifier];
   }
-  function getDebouncedPersistor(target: BServiceClass) {
-    debouncedPersist[target.identifier] =
-      debouncedPersist[target.identifier] ||
+  function getDebouncedPersistor(target: BServiceClass, instance: BServiceInstance<unknown>) {
+    const identifier = instance[IdentifierSymbol];
+    debouncedPersist[identifier] =
+      debouncedPersist[identifier] ||
       debounce(() => {
-        Promise.resolve(getPersistor(target)(target));
+        getPersistor(target, instance)()
       }, debounceInterval ?? 1000);
-    return debouncedPersist[target.identifier];
+    return debouncedPersist[identifier];
   }
 
   container.subscribe((a: BNotifyEvent) => {
     if (!a) return;
     if (a.type !== NotifyEventId) return;
     if (a.isSimilar) return;
-    const data = PersistRegistry.get(a.target);
+    const data = getProps(a.target);
     if (!data || !data.has(a.propertyName)) return;
-    getDebouncedPersistor(a.target)(a.target);
+    getDebouncedPersistor(a.target, a.instance)();
   });
 
   ['visibilitychange', 'pagehide', 'freeze', 'beforeunload'].forEach(
@@ -96,9 +108,9 @@ export async function browserPersist({
             document.visibilityState === 'visible'
           )
             return;
-          PersistRegistry.forEach((_, target) => {
-            getPersistor(target)(target);
-          });
+          for (const item of container.getServices()) {
+            getPersistor(item.class, item.instance)();
+          }
         },
         {
           capture: false,

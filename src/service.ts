@@ -5,7 +5,7 @@ import { ServiceIdentifiers, ServiceRegistry } from './registries';
 /**
  * Defines the options for a service.
  */
-export type BServiceOptions = {
+export type BServiceOptions<T> = {
   /**
    * A unique and identifiable name for your service.
    * @required
@@ -61,6 +61,7 @@ export type BServiceOptions = {
    * @default 1
    */
   version?: number;
+  extends?: T
 };
 
 /**
@@ -96,7 +97,7 @@ export interface BDescriptor<T> {
     /**
      * A reference to the service definition invoking the descriptor.
      */
-    target: BServiceClass,
+    target: BServiceClass<unknown>,
     /**
      * The name of the service property being utilized by the descriptor.
      */
@@ -107,13 +108,13 @@ export interface BDescriptor<T> {
 /**
  * Registers and defines a service in the registry.
  */
-export type BServiceClass = {
+export type BServiceClass<T = unknown> = {
   index: number;
   identifier: string;
   blueprint: {
     [key: string | symbol]: unknown;
   };
-} & BServiceOptions;
+} & BServiceOptions<T>;
 
 /**
  * Represents the definition of a service.
@@ -137,7 +138,7 @@ export type BServiceProto<T> = {
 /**
  * Represents an instance of a service.
  */
-export type BServiceInstance<T> = BServiceProto<T> & BServiceDefinition;
+export type BServiceInstance<T, E = unknown> = BServiceProto<T> & BServiceDefinition & E;
 /**
  * Provides a way to define services that can be accessed through containers.
  * This function allows you to register services with a given configuration and define their properties and methods.
@@ -154,12 +155,12 @@ export type BServiceInstance<T> = BServiceProto<T> & BServiceDefinition;
  * @param {T} definition - The service definition, which includes properties and methods that will be exposed to the container.
  * @returns {BServiceInstance<T>} The defined service with all its properties and methods.
  */
-export function Service<T extends Record<string, BDescriptor<unknown>>>(
+export function Service<T extends Record<string, BDescriptor<unknown>>, E extends BServiceProto<unknown>>(
   /**
    * Service configuration and options.
    * This includes properties like the service identifier, version, and other settings.
    */
-  options: BServiceOptions,
+  options: BServiceOptions<E>,
 
   /**
    * Service Definition Properties
@@ -181,7 +182,7 @@ export function Service<T extends Record<string, BDescriptor<unknown>>>(
    * ```
    */
   definition: T,
-): BServiceInstance<T> {
+): BServiceInstance<T, E> {
   const version = options.version ?? 1;
   const identifier = options.identifier?.replace(/[^a-zA-Z0-9-.]/, '');
   const existing = ServiceIdentifiers.get(identifier);
@@ -189,16 +190,17 @@ export function Service<T extends Record<string, BDescriptor<unknown>>>(
     console.error(
       `${identifier}: Duplicate identifier found, Service identifiers must be unique or you are seeing this cause the service blueprint has changed during runtime (hard reload required!)`,
     );
-    return existing as unknown as BServiceInstance<T>;
+    return existing as unknown as BServiceInstance<T, E>;
   }
 
   const order = options.order ?? 0;
-  const service: BServiceClass = {
+  const service: BServiceClass<E> = {
     identifier,
     order: order,
     version: version,
     blueprint: {},
     index: counter++,
+    extends: options.extends,
   };
   Object.entries(definition).forEach(([key, field]) => {
     const value = field(service, key);
@@ -211,7 +213,7 @@ export function Service<T extends Record<string, BDescriptor<unknown>>>(
   });
   ServiceIdentifiers.set(identifier, service);
   ServiceRegistry.add(service);
-  return service as unknown as BServiceInstance<T>;
+  return service as unknown as BServiceInstance<T, E>;
 }
 
 let counter = 0;

@@ -1,4 +1,4 @@
-import { BServiceClass } from "./service";
+import { BServiceClass, BServiceInstance } from "./service";
 
 export const NotifyEventId = 0;
 
@@ -8,4 +8,5 @@ export type BNotifyEvent = {
   value: unknown;
   target: BServiceClass;
   isSimilar: boolean;
+  instance: BServiceInstance<unknown>
 };

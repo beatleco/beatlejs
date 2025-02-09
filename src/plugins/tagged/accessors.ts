@@ -106,11 +106,7 @@ export function getSnapshot(container: BContainer, catchTheseTags: string[]) {
       catchTheseTags,
     );
     if (!persistedProperties) return;
-    snapshot.push({
-      key: target.identifier,
-      version: target.version ?? 1,
-      data: persistedProperties,
-    });
+    snapshot.push(persistedProperties);
   });
   return snapshot;
 }
@@ -128,7 +124,8 @@ export function restoreSnapshot(
   const map = new Map<string, BServiceClass>();
 
   TaggedRegistry.forEach((_, service) => {
-    map.set(service.identifier, service);
+    const instance = container.getByClass(service) as unknown as BServiceInstance<unknown>;
+    map.set(instance[IdentifierSymbol], service);
   });
   data.forEach((item) => {
     const target = map.get(item.key);

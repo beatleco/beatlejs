@@ -133,6 +133,8 @@ export type BContainer = {
    * Check for halt in the system (mostly used by plugins)
    */
   isHalted(): boolean;
+
+  getServices(): MapIterator<BServiceTuple>
 };
 
 /**
@@ -173,7 +175,12 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
     isHalted,
     dispatch: bus.dispatch as BContainer['dispatch'],
     subscribe: bus.subscribe as BContainer['subscribe'],
+    getServices,
   };
+
+  function getServices() {
+    return services.values()
+  }
 
   function isHalted() {
     return bIsInert;
@@ -221,8 +228,8 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
   }
 
   function autoRegisterNewPlugins() {
-    if(PluginArray.length != pluginCounter) {
-      for(let i = pluginCounter - 1; i < PluginArray.length; i++) {
+    if (PluginArray.length != pluginCounter) {
+      for (let i = pluginCounter - 1; i < PluginArray.length; i++) {
         addPlugin(PluginArray[i]);
       }
     }
@@ -319,6 +326,9 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
         const plugin = pluginArray[i];
         if (plugin.onCreate) {
           await plugin.onCreate(target as BServiceClass, instance);
+          if(service.extends) {
+            await plugin.onCreate(service.extends as BServiceClass, instance);
+          }
         }
       }
       services.set(key, {
@@ -342,6 +352,9 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
         const plugin = pluginArray[i];
         if (plugin.onCreate) {
           plugin.onCreate(target as BServiceClass, instance);
+          if(service.extends) {
+            plugin.onCreate(service.extends as BServiceClass, instance);
+          }
         }
       }
       services.set(key, {
@@ -366,12 +379,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
     return getByClass(target, scope) as T;
   }
 
-  // Helper function to create a service instance
-  function makeService<T>(
-    target: T,
-    serviceIdentifier: string,
-  ): BServiceInstance<T> {
-    autoRegisterNewPlugins();
+  function makeSimple<T>(target: T, serviceIdentifier: string) {
     const metadata = target as BServiceClass;
     const keys = new Set(Object.keys(metadata.blueprint));
     const reservedKeywords = [
@@ -381,15 +389,30 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
       'dispatch',
       'subscribe',
     ];
-    // Check for reserved keywords in service blueprint
     for (const keyword of reservedKeywords) {
       if (!keys.has(keyword)) continue;
       console.error(
         `${serviceIdentifier}.${keyword}: ${keyword} is a reserved keyword, Please choose a different property name.`,
       );
     }
-
     const instance = Object.create(metadata.blueprint);
+    if (metadata.extends) {
+      const instanceMetadata = metadata.extends as BServiceClass;
+      const instance = Object.create(instanceMetadata.blueprint);
+      Object.assign(instance, makeSimple(metadata.extends, serviceIdentifier));
+      Object.assign(metadata.blueprint, instanceMetadata.blueprint);
+    }
+    return instance;
+  }
+
+  // Helper function to create a service instance
+  function makeService<T>(
+    target: T,
+    serviceIdentifier: string,
+  ): BServiceInstance<T> {
+    autoRegisterNewPlugins();
+    const metadata = target as BServiceClass;
+    const instance = makeSimple(target, serviceIdentifier);
     const bus = UnaryBus();
 
     Object.defineProperty(instance, BusSymbol, {
@@ -444,6 +467,9 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
           const plugin = pluginArray[i];
           if (plugin.onDestroy) {
             await plugin.onDestroy(target as BServiceClass, instance);
+            if(metadata.extends) {
+              await plugin.onDestroy(metadata.extends as BServiceClass, instance);
+            }
           }
         }
         services.delete(instance[IdentifierSymbol]);

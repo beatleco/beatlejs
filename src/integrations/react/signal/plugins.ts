@@ -27,6 +27,7 @@ function SignalPlugin() {
               value,
               target,
               isSimilar: val.value === value,
+              instance,
             };
             val.value = value;
 

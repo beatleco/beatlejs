@@ -5,6 +5,7 @@ import type { BServiceClass, BServiceInstance } from './service';
 
 export const IdentifierSymbol = Symbol('identifier');
 export const BusSymbol = Symbol('bus');
+export const TargetSymbol = Symbol('target');
 
 /**
  * A tuple that holds a service class and its corresponding instance.
@@ -229,7 +230,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
 
   function autoRegisterNewPlugins() {
     if (PluginArray.length != pluginCounter) {
-      for (let i = pluginCounter - 1; i < PluginArray.length; i++) {
+      for (let i = pluginCounter; i < PluginArray.length; i++) {
         addPlugin(PluginArray[i]);
       }
     }
@@ -326,7 +327,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
         const plugin = pluginArray[i];
         if (plugin.onCreate) {
           await plugin.onCreate(target as BServiceClass, instance);
-          if(service.extends) {
+          if (service.extends) {
             await plugin.onCreate(service.extends as BServiceClass, instance);
           }
         }
@@ -352,7 +353,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
         const plugin = pluginArray[i];
         if (plugin.onCreate) {
           plugin.onCreate(target as BServiceClass, instance);
-          if(service.extends) {
+          if (service.extends) {
             plugin.onCreate(service.extends as BServiceClass, instance);
           }
         }
@@ -415,6 +416,13 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
     const instance = makeSimple(target, serviceIdentifier);
     const bus = UnaryBus();
 
+    Object.defineProperty(instance, TargetSymbol, {
+      configurable: false,
+      enumerable: false,
+      writable: false,
+      value: target,
+    });
+
     Object.defineProperty(instance, BusSymbol, {
       configurable: false,
       enumerable: false,
@@ -467,7 +475,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
           const plugin = pluginArray[i];
           if (plugin.onDestroy) {
             await plugin.onDestroy(target as BServiceClass, instance);
-            if(metadata.extends) {
+            if (metadata.extends) {
               await plugin.onDestroy(metadata.extends as BServiceClass, instance);
             }
           }

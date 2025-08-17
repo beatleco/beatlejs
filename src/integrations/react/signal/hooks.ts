@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BNotifyEvent, NotifyEventId } from '../../../events';
 import { BServiceInstance } from '../../../service';
 import { useContainer } from '../hooks';
-import { callEffects } from '../callEffects';
 /**
  * Type that maps a list of service classes to instances, using an optional ID.
  */
@@ -44,7 +43,6 @@ export function useSignal<T extends unknown[]>(
       const svc = service as BServiceInstance<unknown>;
       return svc.subscribe(onMessage);
     });
-    subs.push(callEffects(container, services, serviceInstances))
     return () => subs.forEach((un) => un());
   }, []);
   return serviceInstances;

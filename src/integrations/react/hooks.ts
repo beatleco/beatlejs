@@ -1,7 +1,6 @@
-import { useContext, useEffect, useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import type { BContainer } from '../../container';
 import { BeatleContext } from './context';
-import { callEffects } from './callEffects';
 
 export type BUseService<T> = {
   [K in keyof T]: T[K];
@@ -50,7 +49,6 @@ export function useService<T extends unknown[]>(
       ) as unknown as BUseService<T>,
     [],
   );
-  useEffect(() => callEffects(container, services, serviceInstances), []);
   return serviceInstances;
 }
 

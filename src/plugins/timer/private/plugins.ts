@@ -11,10 +11,7 @@ type BTimerFunction = (
 ) => boolean | undefined | void;
 
 function TimerPlugin(): BPlugin {
-  const timerMap = new Map<
-    BServiceInstance<never>,
-    (NodeJS.Timeout | undefined)[]
-  >();
+  const timerMap = new Map<BServiceInstance<never>, (number | undefined)[]>();
 
   return {
     async onCreate(target: BServiceClass, instance: BServiceInstance<never>) {
@@ -29,7 +26,11 @@ function TimerPlugin(): BPlugin {
         ({ propertyName, interval, shots, startManually }) => {
           const proxyFunction: BTimerFunction = instance[propertyName];
           if (typeof proxyFunction !== 'function') {
-            throw new TypeError(instance[IdentifierSymbol], propertyName, 'timer plugin only works on functions');
+            throw new TypeError(
+              instance[IdentifierSymbol],
+              propertyName,
+              'timer plugin only works on functions',
+            );
           }
           const index = timers.length;
           let running = false;

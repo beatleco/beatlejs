@@ -1,6 +1,6 @@
 import { func } from '../decorators/func';
 import { val } from '../decorators/val';
-import { type BListener, EventBus } from '../eventBus';
+import { type BListener, type BUnsubscribe, EventBus } from '../eventBus';
 import { Service } from '../service';
 
 /**
@@ -27,6 +27,7 @@ export function bus<EventBody extends { type: unknown }>(
       emit: func(emit),
       on: func(on),
       waitFor: func(waitFor),
+      waitOn: func(waitOn),
     },
   );
 
@@ -50,8 +51,8 @@ export function bus<EventBody extends { type: unknown }>(
    */
   function on<T extends EventBody>(
     this: typeof self,
-    ...args: [T['type'], ...T['type'][], BListener<unknown>]
-  ) {
+    ...args: [T['type'], ...T['type'][], BListener<T>]
+  ): BUnsubscribe {
     if (args.length < 3) {
       // Subscribe to a single event type.
       return this.bus.subscribe(args[0] as T['type'], args[1] as any);
@@ -87,6 +88,28 @@ export function bus<EventBody extends { type: unknown }>(
         setTimeout(check, waitForDebounceInterval);
       };
       check();
+    });
+  }
+
+  /**
+   * Waits for a specific set of event types to be dispatched.
+   * Resolves the promise when all specified event types are dispatched.
+   *
+   * @param this - The current service instance.
+   * @param types - The event types to wait for.
+   * @returns A promise that resolves when all specified event types are dispatched.
+   */
+  async function waitOn<T extends EventBody['type']>(
+    this: typeof self,
+    ...args: [T, ...T[], CallableFunction]
+  ): Promise<BUnsubscribe> {
+    const fn = args.splice(args.length - 1, 1)[0] as CallableFunction;
+    const evs = args;
+
+    await this.waitFor.apply(this, evs);
+    fn();
+    return this.on.call(this, ...evs, async () => {
+      fn();
     });
   }
 

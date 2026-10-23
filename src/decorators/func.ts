@@ -1,4 +1,4 @@
-import type { BDescriptor } from '../service';
+import { type BDescriptor } from '../service';
 
 /**
  * Defines functions for services using `func`.

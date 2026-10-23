@@ -1,8 +1,8 @@
 import { SignalRegistry } from '../../../decorators/signal';
 import { extendPlugins } from '../../../registries';
-import type { BServiceClass, BServiceInstance } from '../../../service';
+import { type BServiceClass, type BServiceInstance } from '../../../service';
 import { getVaultFromInstance } from '../../../vault';
-import { BNotifyEvent, NotifyEventId } from '../../../events';
+import { type BNotifyEvent, NotifyEventId } from '../../../events';
 
 function SignalPlugin() {
   return {
@@ -15,7 +15,7 @@ function SignalPlugin() {
         const ref = instance as unknown as Record<string, any>;
         vault.set(propertyName, { value: ref[propertyName] });
         Object.defineProperty(instance, propertyName, {
-          configurable: false,
+          configurable: true,
           enumerable: true,
           get: () => vault.get(propertyName)?.value,
           set(value) {
@@ -26,6 +26,7 @@ function SignalPlugin() {
               propertyName,
               value,
               target,
+              prevValue: val.value,
               isSimilar: val.value === value,
               instance,
             };

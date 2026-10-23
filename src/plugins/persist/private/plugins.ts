@@ -1,11 +1,11 @@
-import { BContainer } from '../../../container';
-import { BPlugin } from '../../../plugin';
+import { type BContainer } from '../../../container';
+import { type BPlugin } from '../../../plugin';
 import { extendPlugins, ServiceRegistry } from '../../../registries';
-import { BServiceClass, BServiceInstance } from '../../../service';
+import { type BServiceClass, type BServiceInstance } from '../../../service';
 import { getVaultFromInstance } from '../../../vault';
 import {
-  BPersistDataProviderFunction,
-  BPersistOnSaveTriggeredFunction,
+  type BPersistDataProviderFunction,
+  type BPersistOnSaveTriggeredFunction,
 } from '../browserPersist';
 import { PersistRegistry } from '../decorators';
 import { getKey, Symbol_dataProvider, Symbol_onSaveTriggered } from './symbols';

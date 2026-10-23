@@ -1,5 +1,5 @@
 import { MakeArrayRegistry } from '../../registries';
-import { BDescriptor } from '../../service';
+import { type BDescriptor } from '../../service';
 
 /**
  * Options for configuring debouncing, including the delay in milliseconds.
@@ -25,7 +25,10 @@ export const DebounceRegistry = MakeArrayRegistry<
  * @param next The original method descriptor.
  * @param ms The debounce delay in milliseconds (default is 250ms).
  */
-export function debounce<T extends (...args: any[]) => any>(next: BDescriptor<T>, ms?: number): BDescriptor<T> {
+export function debounce<T extends (...args: any[]) => any>(
+  next: BDescriptor<T>,
+  ms?: number,
+): BDescriptor<T> {
   return function (target, key) {
     DebounceRegistry.register(target, {
       propertyName: key,

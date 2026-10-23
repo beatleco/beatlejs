@@ -10,6 +10,7 @@ async function bootstrap() {
   delete packageJsonParsed.scripts;
   delete packageJsonParsed.devDependencies;
   delete packageJsonParsed.peerDependencies;
+  delete packageJsonParsed.allowScripts;
   packageJsonParsed.main = 'index.js';
   packageJsonParsed.types = 'index.d.ts';
 

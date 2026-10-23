@@ -1,6 +1,9 @@
-import { BContainer } from "../../../container";
-import { BServiceClass, BServiceDefinition, BServiceInstance } from "../../../service";
-
+import { type BContainer } from '../../../container';
+import {
+  type BServiceClass,
+  type BServiceDefinition,
+  type BServiceInstance,
+} from '../../../service';
 
 export function debounce(fn: (...args: any) => void, ms: number) {
   let tm: number | undefined = undefined;
@@ -16,7 +19,7 @@ export function debounce(fn: (...args: any) => void, ms: number) {
   };
 }
 
-export  function restoreServiceSnapshot(
+export function restoreServiceSnapshot(
   container: BContainer,
   target: BServiceDefinition | BServiceClass,
   snapshot?: Record<string, unknown>,

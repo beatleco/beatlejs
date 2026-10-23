@@ -1,6 +1,6 @@
 import './private/plugins';
-import { BContainer, IdentifierSymbol } from '../../container';
-import { BServiceClass, BServiceInstance } from '../../service';
+import { type BContainer, IdentifierSymbol } from '../../container';
+import { type BServiceClass, type BServiceInstance } from '../../service';
 import { PersistRegistry } from './decorators';
 import {
   getKey,
@@ -12,7 +12,7 @@ import {
   getServiceSnapshot,
   restoreServiceSnapshot,
 } from './private/utils';
-import { BNotifyEvent, NotifyEventId } from '../../events';
+import { type BNotifyEvent, NotifyEventId } from '../../events';
 
 function getProps(target: BServiceClass) {
   let set = PersistRegistry.get(target);
@@ -20,7 +20,7 @@ function getProps(target: BServiceClass) {
     const newSet = getProps(target.extends as BServiceClass);
     if (newSet) {
       if (!set) set = new Set();
-      newSet.forEach(prop => set?.add(prop));
+      newSet.forEach((prop) => set?.add(prop));
     }
   }
   return set;
@@ -57,34 +57,44 @@ export async function browserPersist({
 
   for (const item of container.getServices()) {
     try {
-      restoreServiceSnapshot(container, item.class, dataProvider(getKey(item.class, item.instance)));
+      restoreServiceSnapshot(
+        container,
+        item.class,
+        dataProvider(getKey(item.class, item.instance)),
+      );
     } catch (e) {
-      console.error(`error loading service data ${item.instance[IdentifierSymbol]}`, e);
+      console.error(
+        `error loading service data ${item.instance[IdentifierSymbol]}`,
+        e,
+      );
     }
   }
 
   const persist: any = {};
   const debouncedPersist: any = {};
 
-  function getPersistor(target: BServiceClass, instance: BServiceInstance<unknown>) {
+  function getPersistor(
+    target: BServiceClass,
+    instance: BServiceInstance<unknown>,
+  ) {
     const identifier = instance[IdentifierSymbol];
     persist[identifier] =
       persist[identifier] ||
       (() => {
-        const data = getServiceSnapshot(
-          instance as never,
-          getProps(target),
-        );
+        const data = getServiceSnapshot(instance as never, getProps(target));
         return onSaveTriggered(getKey(target, instance), data);
       });
     return persist[identifier];
   }
-  function getDebouncedPersistor(target: BServiceClass, instance: BServiceInstance<unknown>) {
+  function getDebouncedPersistor(
+    target: BServiceClass,
+    instance: BServiceInstance<unknown>,
+  ) {
     const identifier = instance[IdentifierSymbol];
     debouncedPersist[identifier] =
       debouncedPersist[identifier] ||
       debounce(() => {
-        getPersistor(target, instance)()
+        getPersistor(target, instance)();
       }, debounceInterval ?? 1000);
     return debouncedPersist[identifier];
   }

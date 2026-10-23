@@ -6,7 +6,7 @@ import type {
   BServiceDefinition,
   BServiceInstance,
 } from '../../service';
-import { BTagDefinition, TaggedRegistry } from './decorators';
+import { type BTagDefinition, TaggedRegistry } from './decorators';
 
 /**
  * Snapshot of all service instances in the container.
@@ -124,7 +124,9 @@ export function restoreSnapshot(
   const map = new Map<string, BServiceClass>();
 
   TaggedRegistry.forEach((_, service) => {
-    const instance = container.getByClass(service) as unknown as BServiceInstance<unknown>;
+    const instance = container.getByClass(
+      service,
+    ) as unknown as BServiceInstance<unknown>;
     map.set(instance[IdentifierSymbol], service);
   });
   data.forEach((item) => {

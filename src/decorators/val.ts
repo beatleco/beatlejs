@@ -1,4 +1,4 @@
-import { BDescriptor } from "../service";
+import { type BDescriptor } from '../service';
 
 /**
  * Defines primitive values within services using `val`.

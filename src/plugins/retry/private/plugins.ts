@@ -8,10 +8,7 @@ import { RetryRegistry } from '../decorators';
 type BRetryFunction = (...args: unknown[]) => Promise<void> | void;
 
 function RetryPlugin(): BPlugin {
-  const timerMap = new Map<
-    BServiceInstance<never>,
-    (NodeJS.Timeout | undefined)[]
-  >();
+  const timerMap = new Map<BServiceInstance<never>, (number | undefined)[]>();
 
   return {
     async onCreate(target: BServiceClass, instance: BServiceInstance<never>) {
@@ -27,7 +24,11 @@ function RetryPlugin(): BPlugin {
         ({ propertyName, interval, shots, maximumDelay, retryCurve }) => {
           const proxyFunction: BRetryFunction = instance[propertyName];
           if (typeof proxyFunction !== 'function') {
-            throw new TypeError(instance[IdentifierSymbol], propertyName, 'retry plugin only works on functions');
+            throw new TypeError(
+              instance[IdentifierSymbol],
+              propertyName,
+              'retry plugin only works on functions',
+            );
           }
           const index = timers.length;
 
@@ -67,7 +68,9 @@ function RetryPlugin(): BPlugin {
                     `${instance[IdentifierSymbol]}.${propertyName}: Retrying in ${delay / 1000} seconds.`,
                   );
 
-                  timers[index] = setTimeout(() => callee(acc, rej), delay);
+                  timers[index] = Number(
+                    setTimeout(() => callee(acc, rej), delay),
+                  );
                   counter++;
                 });
             });

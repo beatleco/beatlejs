@@ -8,10 +8,7 @@ import { DebounceRegistry } from '../decorators';
 type BDebounceFunction = (...args: unknown[]) => Promise<void> | void;
 
 function DebouncePlugin(): BPlugin {
-  const timerMap = new Map<
-    BServiceInstance<never>,
-    (NodeJS.Timeout | undefined)[]
-  >();
+  const timerMap = new Map<BServiceInstance<never>, (number | undefined)[]>();
 
   return {
     async onCreate(target: BServiceClass, instance: BServiceInstance<never>) {
@@ -25,16 +22,22 @@ function DebouncePlugin(): BPlugin {
       definitions.forEach(({ propertyName, ms }) => {
         const proxyFunction: BDebounceFunction = instance[propertyName];
         if (typeof proxyFunction !== 'function') {
-          throw new TypeError(instance[IdentifierSymbol], propertyName, 'debounce plugin only works on functions');
+          throw new TypeError(
+            instance[IdentifierSymbol],
+            propertyName,
+            'debounce plugin only works on functions',
+          );
         }
         const index = timers.length;
         function replacementFunction(...args: unknown[]) {
           if (!timers) return;
           clearTimeout(timers[index]);
-          timers[index] = setTimeout(() => {
-            proxyFunction.apply(instance, args);
-            timers[index] = undefined;
-          }, ms);
+          timers[index] = Number(
+            setTimeout(() => {
+              proxyFunction.apply(instance, args);
+              timers[index] = undefined;
+            }, ms),
+          );
         }
         Object.defineProperty(instance, propertyName, {
           configurable: true,

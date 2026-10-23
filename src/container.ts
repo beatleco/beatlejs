@@ -7,6 +7,10 @@ export const IdentifierSymbol = Symbol('identifier');
 export const BusSymbol = Symbol('bus');
 export const TargetSymbol = Symbol('target');
 
+export type BGetOptions<T> = {
+  scope?: string | null;
+  defaultValue?: Partial<T>;
+};
 /**
  * A tuple that holds a service class and its corresponding instance.
  */
@@ -27,7 +31,7 @@ export type BContainer = {
    * @param {string} [scope] - Optional scope to specify which instance of the service to retrieve.
    * @returns {T} The service instance.
    */
-  getByClass<T>(target: T, scope?: string): T;
+  getByClass<T>(target: T, options?: BGetOptions<T>): T;
 
   /**
    * Retrieves a service instance by its name.
@@ -36,7 +40,7 @@ export type BContainer = {
    * @param {string} [scope] - Optional scope to specify which instance of the service to retrieve.
    * @returns {T | undefined} The service instance or undefined if not found.
    */
-  getByName<T = unknown>(name: string, scope?: string): T | undefined;
+  getByName<T = unknown>(name: string, options?: BGetOptions<T>): T | undefined;
 
   /**
    * Retrieves a plugin instance by its class.
@@ -54,7 +58,7 @@ export type BContainer = {
    * @param {string} [scope] - Optional scope to specify which instance of the service to resolve.
    * @returns {Promise<T>} A promise that resolves to the service instance.
    */
-  resolveByClass<T>(target: T, scope?: string): Promise<T>;
+  resolveByClass<T>(target: T, options?: BGetOptions<T>): Promise<T>;
 
   /**
    * Invokes a function from multiple services in parallel.
@@ -113,21 +117,21 @@ export type BContainer = {
 
   /**
    * Dispatch a message to service event bus
-   * 
+   *
    * @param message message to dispatch
    */
   dispatch<T>(message: T): Promise<void>;
   /**
    * Subscribe to service event bus
-   * 
-   * @param listener listener function 
+   *
+   * @param listener listener function
    */
   subscribe<T>(listener: BListener<T>): BUnsubscribe;
 
   /**
    * Halt hooks and events that are happening (mostly used by plugins)
-   * 
-   * @param inert inert mode 
+   *
+   * @param inert inert mode
    */
   halt(inert: boolean): void;
   /**
@@ -135,7 +139,7 @@ export type BContainer = {
    */
   isHalted(): boolean;
 
-  getServices(): MapIterator<BServiceTuple>
+  getServices(): MapIterator<BServiceTuple>;
 };
 
 /**
@@ -180,7 +184,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
   };
 
   function getServices() {
-    return services.values()
+    return services.values();
   }
 
   function isHalted() {
@@ -190,7 +194,6 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
   function halt(inert: boolean) {
     bIsInert = inert;
   }
-
 
   function setProperty<T = unknown>(name: string | symbol, value: T) {
     Object.defineProperty(context, name, {
@@ -316,9 +319,14 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
   }
 
   // Method to resolve a service by its class
-  async function resolveByClass<T>(target: T, scope?: string): Promise<T> {
+  async function resolveByClass<T>(
+    target: T,
+    options?: BGetOptions<T>,
+  ): Promise<T> {
     const service = target as BServiceClass;
-    const key = scope ? `${service.identifier}_${scope}` : service.identifier;
+    const key = options?.scope
+      ? `${service.identifier}_${options?.scope}`
+      : service.identifier;
     const impl = services.get(key);
     if (!impl) {
       const instance = makeService(target, key);
@@ -327,9 +335,6 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
         const plugin = pluginArray[i];
         if (plugin.onCreate) {
           await plugin.onCreate(target as BServiceClass, instance);
-          if (service.extends) {
-            await plugin.onCreate(service.extends as BServiceClass, instance);
-          }
         }
       }
       services.set(key, {
@@ -342,9 +347,11 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
   }
 
   // Method to retrieve a service by its class
-  function getByClass<T>(target: T, scope?: string): T {
+  function getByClass<T>(target: T, options?: BGetOptions<T>): T {
     const service = target as BServiceClass;
-    const key = scope ? `${service.identifier}_${scope}` : service.identifier;
+    const key = options?.scope
+      ? `${service.identifier}_${options?.scope}`
+      : service.identifier;
     const impl = services.get(key);
     if (!impl) {
       const instance = makeService(target, key);
@@ -353,9 +360,6 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
         const plugin = pluginArray[i];
         if (plugin.onCreate) {
           plugin.onCreate(target as BServiceClass, instance);
-          if (service.extends) {
-            plugin.onCreate(service.extends as BServiceClass, instance);
-          }
         }
       }
       services.set(key, {
@@ -368,8 +372,11 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
   }
 
   // Method to retrieve a service by its name
-  function getByName<T = unknown>(identifier: string, scope?: string): T {
-    const key = scope ? `${identifier}_${scope}` : identifier;
+  function getByName<T = unknown>(
+    identifier: string,
+    options?: BGetOptions<T>,
+  ): T {
+    const key = options?.scope ? `${identifier}_${options?.scope}` : identifier;
     const impl = services.get(key);
     if (impl) return impl.instance as T;
     const target = ServiceIdentifiers.get(identifier);
@@ -377,7 +384,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
       throw new Error(
         `${identifier}: Service is not registered within the global scope`,
       );
-    return getByClass(target, scope) as T;
+    return getByClass(target, options) as T;
   }
 
   function makeSimple<T>(target: T, serviceIdentifier: string) {
@@ -396,14 +403,7 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
         `${serviceIdentifier}.${keyword}: ${keyword} is a reserved keyword, Please choose a different property name.`,
       );
     }
-    const instance = Object.create(metadata.blueprint);
-    if (metadata.extends) {
-      const instanceMetadata = metadata.extends as BServiceClass;
-      const instance = Object.create(instanceMetadata.blueprint);
-      Object.assign(instance, makeSimple(metadata.extends, serviceIdentifier));
-      Object.assign(metadata.blueprint, instanceMetadata.blueprint);
-    }
-    return instance;
+    return Object.create(metadata.blueprint);
   }
 
   // Helper function to create a service instance
@@ -475,9 +475,6 @@ export function Container(options?: { maxPlugins?: number }): BContainer {
           const plugin = pluginArray[i];
           if (plugin.onDestroy) {
             await plugin.onDestroy(target as BServiceClass, instance);
-            if (metadata.extends) {
-              await plugin.onDestroy(metadata.extends as BServiceClass, instance);
-            }
           }
         }
         services.delete(instance[IdentifierSymbol]);

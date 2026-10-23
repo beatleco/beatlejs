@@ -1,6 +1,6 @@
 import { MakeArrayRegistry } from '../../registries';
-import { BDescriptor } from '../../service';
-import { DePromise } from '../../types';
+import { type BDescriptor } from '../../service';
+import { type DePromise } from '../../types';
 
 /**
  * Options for configuring the retry behavior.
@@ -44,8 +44,8 @@ export function retry<T extends (...args: any[]) => any>(
   return function (target, key) {
     RetryRegistry.register(target, {
       propertyName: key,
-      interval: options?.interval ?? 1000, 
-      shots: options?.shots ?? 5, 
+      interval: options?.interval ?? 1000,
+      shots: options?.shots ?? 5,
       maximumDelay: options?.maximumDelay ?? 32_000,
       retryCurve: options?.retryCurve ?? 'linear',
     });

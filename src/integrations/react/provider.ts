@@ -1,6 +1,5 @@
-import type { JSX, PropsWithChildren } from 'react';
-import { createElement } from 'react';
-import type { BContainer } from '../../container';
+import { createElement, type JSX, type PropsWithChildren } from 'react';
+import { type BContainer } from '../../container';
 import { BeatleContext } from './context';
 
 /**
@@ -33,7 +32,9 @@ import { BeatleContext } from './context';
 export function BeatleProvider({
   container,
   children,
-}: PropsWithChildren<{ container: BContainer }>): JSX.Element {
+}: PropsWithChildren<{
+  container: BContainer;
+}>): JSX.Element {
   return (
     createElement(BeatleContext.Provider, {
       value: { container },

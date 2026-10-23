@@ -1,5 +1,5 @@
 import { useContext, useMemo } from 'react';
-import type { BContainer } from '../../container';
+import { type BContainer, type BGetOptions } from '../../container';
 import { BeatleContext } from './context';
 
 export type BUseService<T> = {
@@ -39,15 +39,15 @@ export type BUseService<T> = {
  */
 export function useService<T extends unknown[]>(
   services: [...T],
-  scope?: string,
+  options?: BGetOptions<T[number]>,
 ): BUseService<T> {
   const container = useContainer();
   const serviceInstances = useMemo(
     () =>
       services.map((service) =>
-        container.getByClass(service, scope),
+        container.getByClass(service, options),
       ) as unknown as BUseService<T>,
-    [],
+    [options?.scope],
   );
   return serviceInstances;
 }

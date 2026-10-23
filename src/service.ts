@@ -7,11 +7,6 @@ import { ServiceIdentifiers, ServiceRegistry } from './registries';
  */
 export type BServiceOptions<T> = {
   /**
-   * A unique and identifiable name for your service.
-   * @required
-   */
-  identifier: string;
-  /**
    * Specifies the order of execution.
    *
    * @description
@@ -61,8 +56,20 @@ export type BServiceOptions<T> = {
    * @default 1
    */
   version?: number;
-  extends?: T
-};
+  extends?: T;
+} & (
+  | {
+      abstract?: false | undefined;
+      /**
+       * A unique and identifiable name for your service.
+       * @required
+       */
+      identifier: string;
+    }
+  | {
+      abstract: true;
+    }
+);
 
 /**
  * Defines the options for a descriptor.
@@ -114,6 +121,7 @@ export type BServiceClass<T = unknown> = {
   blueprint: {
     [key: string | symbol]: unknown;
   };
+  definition: Record<string, BDescriptor<unknown>>;
 } & BServiceOptions<T>;
 
 /**
@@ -135,10 +143,15 @@ export type BServiceProto<T> = {
   [K in keyof T]: T[K] extends BDescriptor<infer U> ? U : never;
 };
 
+export type BOverride<T, U> = Omit<U, keyof T> & T;
+
 /**
  * Represents an instance of a service.
  */
-export type BServiceInstance<T, E = unknown> = BServiceProto<T> & BServiceDefinition & E;
+export type BServiceInstance<T, E = unknown> = BOverride<
+  BServiceProto<T> & BServiceDefinition,
+  E
+>;
 /**
  * Provides a way to define services that can be accessed through containers.
  * This function allows you to register services with a given configuration and define their properties and methods.
@@ -155,7 +168,10 @@ export type BServiceInstance<T, E = unknown> = BServiceProto<T> & BServiceDefini
  * @param {T} definition - The service definition, which includes properties and methods that will be exposed to the container.
  * @returns {BServiceInstance<T>} The defined service with all its properties and methods.
  */
-export function Service<T extends Record<string, BDescriptor<unknown>>, E extends BServiceProto<unknown>>(
+export function Service<
+  T extends Record<string, BDescriptor<unknown>>,
+  E extends BServiceProto<unknown>,
+>(
   /**
    * Service configuration and options.
    * This includes properties like the service identifier, version, and other settings.
@@ -184,13 +200,17 @@ export function Service<T extends Record<string, BDescriptor<unknown>>, E extend
   definition: T,
 ): BServiceInstance<T, E> {
   const version = options.version ?? 1;
-  const identifier = options.identifier?.replace(/[^a-zA-Z0-9-.]/, '');
-  const existing = ServiceIdentifiers.get(identifier);
-  if (existing) {
-    console.error(
-      `${identifier}: Duplicate identifier found, Service identifiers must be unique or you are seeing this cause the service blueprint has changed during runtime (hard reload required!)`,
-    );
-    return existing as unknown as BServiceInstance<T, E>;
+  const identifier = options.abstract
+    ? 'abstract'
+    : options.identifier?.replace(/[^a-zA-Z0-9-.]/, '');
+  if (!options.abstract) {
+    const existing = ServiceIdentifiers.get(identifier);
+    if (existing) {
+      console.error(
+        `${identifier}: Duplicate identifier found, Service identifiers must be unique or you are seeing this cause the service blueprint has changed during runtime (hard reload required!)`,
+      );
+      return existing as unknown as BServiceInstance<T, E>;
+    }
   }
 
   const order = options.order ?? 0;
@@ -201,18 +221,33 @@ export function Service<T extends Record<string, BDescriptor<unknown>>, E extend
     blueprint: {},
     index: counter++,
     extends: options.extends,
+    definition,
   };
-  Object.entries(definition).forEach(([key, field]) => {
-    const value = field(service, key);
-    Object.defineProperty(service.blueprint, key, {
-      writable: true,
-      enumerable: true,
-      configurable: false,
-      value: value,
+
+  let next = service as unknown as BServiceClass;
+  const stack = [];
+  while (next) {
+    stack.push(next);
+    next = next.extends as unknown as BServiceClass;
+  }
+
+  for (let i = stack.length - 1; i >= 0; i--) {
+    const def = stack[i];
+    Object.entries(def.definition).forEach(([key, field]) => {
+      const value = field(service, key);
+      Object.defineProperty(service.blueprint, key, {
+        writable: true,
+        enumerable: true,
+        configurable: false,
+        value: value,
+      });
     });
-  });
-  ServiceIdentifiers.set(identifier, service);
-  ServiceRegistry.add(service);
+  }
+
+  if (!options.abstract) {
+    ServiceIdentifiers.set(identifier, service);
+    ServiceRegistry.add(service);
+  }
   return service as unknown as BServiceInstance<T, E>;
 }
 

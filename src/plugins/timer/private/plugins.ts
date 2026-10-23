@@ -48,9 +48,11 @@ function TimerPlugin(): BPlugin {
               return;
             }
             if (shots === 0 || counter < shots - 1) {
-              timers[index] = setTimeout(() => {
-                timerFunction(elapsed + interval, counter + 1);
-              }, interval);
+              timers[index] = Number(
+                setTimeout(() => {
+                  timerFunction(elapsed + interval, counter + 1);
+                }, interval),
+              );
             } else {
               running = false;
               timers[index] = undefined;

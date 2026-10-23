@@ -32,10 +32,12 @@ function DebouncePlugin(): BPlugin {
         function replacementFunction(...args: unknown[]) {
           if (!timers) return;
           clearTimeout(timers[index]);
-          timers[index] = setTimeout(() => {
-            proxyFunction.apply(instance, args);
-            timers[index] = undefined;
-          }, ms);
+          timers[index] = Number(
+            setTimeout(() => {
+              proxyFunction.apply(instance, args);
+              timers[index] = undefined;
+            }, ms),
+          );
         }
         Object.defineProperty(instance, propertyName, {
           configurable: true,

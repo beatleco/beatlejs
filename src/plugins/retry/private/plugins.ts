@@ -68,7 +68,9 @@ function RetryPlugin(): BPlugin {
                     `${instance[IdentifierSymbol]}.${propertyName}: Retrying in ${delay / 1000} seconds.`,
                   );
 
-                  timers[index] = setTimeout(() => callee(acc, rej), delay);
+                  timers[index] = Number(
+                    setTimeout(() => callee(acc, rej), delay),
+                  );
                   counter++;
                 });
             });

@@ -28,8 +28,8 @@ type NoDuplicates<
   ...infer Rest extends readonly PropKey[],
 ]
   ? Head extends Seen
-  ? readonly [`Duplicate key: ${Head & string}`, ...NoDuplicates<Rest, Seen>]
-  : readonly [Head, ...NoDuplicates<Rest, Seen | Head>]
+    ? readonly [`Duplicate key: ${Head & string}`, ...NoDuplicates<Rest, Seen>]
+    : readonly [Head, ...NoDuplicates<Rest, Seen | Head>]
   : Keys;
 
 /**
